@@ -1,0 +1,18 @@
+\e[2J\e[H
+  \e[0;1;34mYou saunter into the Tavern, confident that everyone will make way for a hero
+of such splendor as yourself.  Unfortunately, the patrons of the tavern don't
+care for heroes much, as there are so many around here.  No one even looks twice
+at you...
+
+   \e[0;35m-----\e[31mLynx's\e[35m--\e[31mTavern\e[35m------------------------------
+
+   \e[1;34m(\e[0;31mT\e[1;34m)alk to Barkeep
+        \e[1;34m(\e[1;30mL\e[1;34m)isten to Rumors
+   \e[1;34m(\e[0;31mO\e[1;34m)rder a Drink          \e[1;34m(\e[0;31mF\e[1;34m)lirt with Corenne
+   \e[1;34m(\e[0;31mH\e[1;34m)ang Out for a While   \e[1;34m(\e[0;31mV\e[1;34m)iew Top Scores
+
+   \e[1;34m(\e[0;31m?\e[1;34m)Display Menu
+          \e[1;34m(\e[0;31mQ\e[1;34m)uit to Town
+
+   \e[0;35m-----------------------------------\e[37m
+\e[A

@@ -1,0 +1,11 @@
+\e[2J\e[H                                                   
+  \e[1;30m---\e[37mThe\e[30m--\e[37mArena\e[30m-------------------------------
+
+   \e[0;34m(\e[0;37mC\e[0;34m)hallenge Player
+   \e[0;34m(\e[0;37mG\e[0;34m)ladiator Combat
+   \e[0;34m(\e[0;37mB\e[0;34m)et on Gladiator Combat
+   \e[0;34m(\e[0;37mL\e[0;34m)ist all Players
+   \e[0;34m(\e[0;37m?\e[0;34m)Display Menu
+   \e[0;34m(\e[0;37mQ\e[0;34m)uit to Town
+
+  \e[1;30m----------------------------------   

@@ -1,0 +1,9 @@
+\e[2J\e[H                                                   
+  \e[0;34m---\e[1;31mFrank's\e[0;34m--\e[1;31mBank\e[0;34m--------------------
+
+   \e[0;36m(\e[1;31mD\e[0;36m)eposit Coins
+   \e[0;36m(\e[1;31mW\e[0;36m)ithdraw Coins
+   \e[0;36m(\e[1;31m?\e[0;36m)Display Menu
+   \e[0;36m(\e[1;31mQ\e[0;36m)uit to Town
+
+  \e[0;34m--------------------------------   

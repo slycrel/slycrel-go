@@ -1,0 +1,13 @@
+[
+  {"name": "Rags", "defense": 0, "class": 0, "cost": 0, "ability": 0, "quality": 0, "actionStr": "flaps"},
+  {"name": "Leather Vest", "defense": 2, "class": 0, "cost": 15, "ability": 0, "quality": 60, "actionStr": "absorbs"},
+  {"name": "Wooden Shield", "defense": 2, "class": 1, "cost": 10, "ability": 0, "quality": 50, "actionStr": "blocks"},
+  {"name": "Studded Leather", "defense": 3, "class": 0, "cost": 30, "ability": 0, "quality": 70, "actionStr": "deflects"},
+  {"name": "Chain Mail", "defense": 5, "class": 0, "cost": 60, "ability": 0, "quality": 80, "actionStr": "rings"},
+  {"name": "Iron Shield", "defense": 4, "class": 1, "cost": 40, "ability": 0, "quality": 75, "actionStr": "blocks"},
+  {"name": "Scale Mail", "defense": 6, "class": 0, "cost": 85, "ability": 0, "quality": 82, "actionStr": "clinks"},
+  {"name": "Plate Mail", "defense": 8, "class": 2, "cost": 150, "ability": 0, "quality": 90, "actionStr": "clangs"},
+  {"name": "Steel Shield", "defense": 6, "class": 1, "cost": 75, "ability": 0, "quality": 85, "actionStr": "deflects"},
+  {"name": "Elven Chain", "defense": 9, "class": 0, "cost": 200, "ability": 0, "quality": 95, "actionStr": "shimmers"},
+  {"name": "Mithril Plate", "defense": 12, "class": 2, "cost": 350, "ability": 1, "quality": 98, "actionStr": "gleams"}
+]

@@ -1,0 +1,17 @@
+[
+  {"name": "Hands", "strike": 1, "range": 0, "cost": 0, "ability": 0, "quality": 0, "actionStr": "punch"},
+  {"name": "Wooden Club", "strike": 2, "range": 0, "cost": 5, "ability": 0, "quality": 50, "actionStr": "bash"},
+  {"name": "Dagger", "strike": 3, "range": 1, "cost": 12, "ability": 0, "quality": 70, "actionStr": "stab"},
+  {"name": "Short Sword", "strike": 4, "range": 0, "cost": 25, "ability": 0, "quality": 80, "actionStr": "slash"},
+  {"name": "Mace", "strike": 5, "range": 0, "cost": 35, "ability": 0, "quality": 75, "actionStr": "smash"},
+  {"name": "Long Sword", "strike": 6, "range": 0, "cost": 50, "ability": 0, "quality": 85, "actionStr": "slash"},
+  {"name": "Battle Axe", "strike": 7, "range": 0, "cost": 70, "ability": 0, "quality": 80, "actionStr": "chop"},
+  {"name": "Spear", "strike": 5, "range": 3, "cost": 40, "ability": 0, "quality": 75, "actionStr": "thrust"},
+  {"name": "Crossbow", "strike": 6, "range": 6, "cost": 65, "ability": 0, "quality": 70, "actionStr": "shoot"},
+  {"name": "Broadsword", "strike": 8, "range": 0, "cost": 90, "ability": 0, "quality": 90, "actionStr": "cleave"},
+  {"name": "War Hammer", "strike": 9, "range": 0, "cost": 120, "ability": 0, "quality": 85, "actionStr": "crush"},
+  {"name": "Elven Blade", "strike": 10, "range": 0, "cost": 160, "ability": 0, "quality": 95, "actionStr": "slice"},
+  {"name": "Longbow", "strike": 8, "range": 8, "cost": 130, "ability": 0, "quality": 80, "actionStr": "shoot"},
+  {"name": "Flaming Sword", "strike": 12, "range": 0, "cost": 250, "ability": 1, "quality": 90, "actionStr": "sear"},
+  {"name": "Staff of Power", "strike": 7, "range": 4, "cost": 200, "ability": 2, "quality": 95, "actionStr": "blast"}
+]

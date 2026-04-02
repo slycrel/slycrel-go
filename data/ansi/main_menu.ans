@@ -1,0 +1,13 @@
+\e[2J\e[H
+  \e[1;37m---\e[34mMain\e[37m--\e[34mMenu\e[37m------------------------------------------------
+
+  \e[0;34m(\e[1;32mT\e[0;34m)avern\e[23C\e[0;34m(\e[1;32mL\e[0;34m)orn's Armory
+  \e[0;34m(\e[1;32mB\e[0;34m)ank\e[25C\e[0;34m(\e[1;32mV\e[0;34m)iew Stats
+  \e[0;34m(\e[1;32mW\e[0;34m)ilderness\e[19C\e[0;34m(\e[1;32mH\e[0;34m)erbalist's Shop  
+  \e[0;34m(\e[1;32mA\e[0;34m)rena\e[24C\e[0;34m(\e[1;30mJ\e[0;34m)ail
+  \e[0;34m(\e[1;30mS\e[0;34m)mith's Blacksmith Shop\e[6C\e[0;34m(\e[1;32m@\e[0;34m)The Tower of Wisdom
+  \e[0;34m(\e[1;32mI\e[0;34m)nn
+  \e[0;34m(\e[1;32m?\e[0;34m)Display Menu\e[12C\e[0;37m/
+  \e[0;34m(\e[1;32mX\e[0;34m)Exit to BBS\e[7C\e[0;31mO\e[33m====\e[37m|\e[1;30m>>>>>>>>>>>>>>>>>
+\e[29C\e[0;37m\
+  \e[1;37m-----------------------------------------------

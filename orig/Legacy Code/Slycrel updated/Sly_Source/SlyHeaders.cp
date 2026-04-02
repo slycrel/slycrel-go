@@ -1,0 +1,1 @@
+#include "Builtins.h"#include "SlyHeaders.h"TSlyExternal *gSlyExternal;TSlyPrivates *gSlyPrivates;CharacterHandle gCharacter;TCharFile			*gCharacterFile;THighScoreFile		*gHighScoreFile;TInnFile			*gInnFile;TWeaponFile			*gWeaponFile;TArmorFile			*gArmorFile;TGCombatPrefsFile	*gGCombatFile;TGCombatListFile	*gCombatListFile;TRegistrationFile	*gRegistrationFile;

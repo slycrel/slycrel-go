@@ -1,0 +1,24 @@
+# Binary
+slycrel
+
+# Game state (player data, not source)
+data/state/
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# Legacy archives (too large for git)
+orig/**/*.zip
+orig/**/*.sit
+
+# SVN metadata from original source
+orig/**/.svn/
+
+# Claude Code internals
+.claude/

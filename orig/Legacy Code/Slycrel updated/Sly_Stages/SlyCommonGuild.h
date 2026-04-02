@@ -1,0 +1,1 @@
+#ifndef SLYCOMMONGUILD_H#define SLYCOMMONGUILD_H#include "SlyHeaders.h"#include "HermHeaders.h"#include "ExternalUtils.h"#include "UExternal.h"#include "General_Unit.h"#include "Sly_CommonGuildUnit.h"extern void ST_CommonGuild(void);extern void ST_GuildShortPrompt(void);extern void ST_GuildMenu(void);extern void ST_TryNewLevel(void);#endif

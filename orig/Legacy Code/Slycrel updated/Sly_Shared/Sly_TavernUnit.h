@@ -1,0 +1,1 @@
+#ifndef SLY_TAVERNUNIT_H#define SLY_TAVERNUNIT_H#include "SlyHeaders.h"#include "HermHeaders.h"#include "ExternalUtils.h"#include "UExternal.h"#include "General_Unit.h"//-Misc.-extern void OrderDrink(short Long1);extern void FlirtEffects(short FlirtNum);#endif

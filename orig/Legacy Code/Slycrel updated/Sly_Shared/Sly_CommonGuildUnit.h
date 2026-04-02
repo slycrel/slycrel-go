@@ -1,0 +1,1 @@
+#ifndef SLY_COMMONGUILDUNIT_H#define SLY_COMMONGUILDUNIT_H#include "SlyHeaders.h"#include "HermHeaders.h"#include "ExternalUtils.h"#include "General_Unit.h"extern long NextLevelUp(long lvl);extern void GiveNewLevel(CharacterPtr theChar, char Class_4);#endif

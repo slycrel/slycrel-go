@@ -1,0 +1,1 @@
+#ifndef SLYBLACKSMITH_H#define SLYBLACKSMITH_H#include "SlyHeaders.h"#include "HermHeaders.h"#include "ExternalUtils.h"#include "UExternal.h"#include "General_Unit.h"extern void ST_Blacksmith(void);#endif

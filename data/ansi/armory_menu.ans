@@ -1,0 +1,12 @@
+\e[2J\e[H                                                   
+  \e[0;34m---\e[1;33mThe\e[0;34m--\e[1;33mArmory\e[0;34m-------------------------------
+
+   \e[0;32m(\e[0;33m?\e[0;32m)Display Menu
+   \e[0;32m(\e[0;33mA\e[0;32m)rmor Purchase
+   \e[0;32m(\e[0;33mW\e[0;32m)eapon Purchase
+   \e[0;32m(\e[0;33mG\e[0;32m)et rid of Armor
+   \e[0;32m(\e[0;33mM\e[0;32m)ove/Switch weapons
+   \e[0;32m(\e[0;33mS\e[0;32m)ell Weapon
+   \e[0;32m(\e[0;33mQ\e[0;32m)uit to Town
+
+  \e[0;34m----------------------------------
