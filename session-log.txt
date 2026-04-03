@@ -1,0 +1,300 @@
+================================================================================
+  Slycrel: Session Log — Recreating a 30-Year-Old BBS Game in Go
+  April 1-2, 2026
+  Jeremy Stone + Claude (Opus 4.6)
+================================================================================
+
+BACKGROUND
+----------
+~30 years ago, Dave Dolinar and Jeremy Stone wrote "Slycrel" — a text-based RPG
+door game for the Hermes II BBS on Mac Classic, written in Pascal. Dave's older
+brother Bill later ported it to C++. The original source code survived across
+several moves and decades in a folder called "Legacy Code."
+
+Jeremy decided to bring it back to life.
+
+
+SESSION START
+=============
+
+JEREMY:
+  I've got a project for you. 30 years ago or so, a friend and I wrote a game
+  for his Hermes 2 BBS system in pascal. Later, my friend's older brother ported
+  it to c++. I'd like to get it ported to something modern, first running in the
+  terminal, then potentially expand it out to a more client/server model to play
+  with and extend. Potentially confusing in this context, our game was named
+  'slycrel', and that's also the handle I've used online for the past few
+  decades. :)
+
+CLAUDE:
+  [Explored the orig/ directory, found the C++ source code in "Legacy Code/
+  Slycrel updated/" — ~20 source files across Sly_Source, Sly_Shared, Sly_Stages,
+  Framework, PascalToC++, Sly_Terrain, Sly_Sysop directories]
+
+  [Read SlyHeaders.h — all data structures: CharacterRec (~40 fields), MonsterRec,
+  WeaponRec, ArmorRec, InnRec, 18 location types, 10 terrain types, 70+ game
+  states, combat types, etc.]
+
+  [Read SlyMain.cp — main game flow, character creation, town routing]
+
+  [Read the programmer's notes — found the leveling formula:
+  f(x) = LevelUpDifficulty * x^3 + f(x-1), base 50 XP
+  Also found notes about Dave leaving on an LDS mission and Bill taking over]
+
+  [Read the README — registration info, $20 to Bill Dolinar at 583 North 30 West,
+  American Fork, UT 84003. Known bugs, future plans, credits including
+  "Spray Cheese & Ritz Crackers"]
+
+  Asked questions about: target language, scope of port, BBS framework coupling,
+  multiplayer, where openclaw-orchestration fits in, and the zip file.
+
+JEREMY:
+  - Language: Go (good for backend server potential and terminal support)
+  - Faithful recreation first, then extend
+  - Terminal app that recreates original intent
+  - Code for multiplayer from the start
+  - Openclaw-orchestration for background research tasks
+  - The relevant source is already extracted from the zip
+
+  Also shared: https://www.hermesbbs.com — Dave's friend's BBS site, and
+  https://github.com/slycrel/hermesbbs-orig — the original Hermes BBS source
+
+CLAUDE:
+  [Created a detailed plan with 10 phases, covering architecture, Go project
+  structure, core interfaces (IOProvider, State machine, Store), data models,
+  and implementation order]
+
+JEREMY:
+  [Approved the plan]
+
+
+PHASE 1: FOUNDATION
+====================
+Built the project skeleton:
+  - go mod init github.com/slycrel/slycrel
+  - internal/model/ — all data structs translated from SlyHeaders.h
+  - internal/io/ — IOProvider interface, ANSI helpers, local terminal with
+    raw mode via golang.org/x/term
+  - internal/store/ — Store interface, JSON file implementation with atomic
+    writes and mutex protection
+  - internal/game/ — StateMachine (SetNextState/SetReturnState/PopReturnState
+    matching the original exactly), Session, GameEngine
+  - cmd/slycrel/main.go — entry point
+  - data/ansi/ — placeholder ANSI art screens
+
+First build: clean compile, 3.2MB binary.
+
+
+PHASE 2: CHARACTER CREATION + TOWN HUB
+=======================================
+  - RollChar with all three class stat ranges (from Sly_MainUnit.cp)
+  - Character creation: name, class (Fighter/Thief/Mage), gender, favorite
+    color, reroll, view character sheet
+  - Gender modifier: Female = -3 Str, +1 MaxPsyche, +2 Dex, -2 MaxHP, +2 Faith
+  - Town menu with all 18 location stubs
+  - Save/quit flow
+
+JEREMY:
+  Looks like the ansi is a little messed up, but seems to be working
+
+CLAUDE:
+  Fixed — the .ans files had literal [ instead of ESC sequences. Added \e[
+  placeholder convention that ShowANSIFile converts at runtime.
+
+JEREMY:
+  Yeah, much better. Let's keep going.
+
+
+PHASE 3: TEXT COMBAT
+====================
+Read the full Sly_TextCombatUnit.cp and SlyTextCombat.cp to get every formula:
+
+Combat mechanics ported faithfully:
+  - RollInitiative: playerMovement - monsterMovement + random(0,3) >= 0
+  - DoDamage (user, low level ≤4):
+      random(Str*0.75 + Weapon.Strike)*1.25 to (Str/0.75 + Weapon.Strike)*1.35)
+      minus Monster.Defense
+  - DoDamage (user, high level >4):
+      random(Str/2 + Weapon.Strike to same*1.25) minus Monster.Defense
+  - DoDamage (monster):
+      random(Offense*0.35 to Offense*1.35) minus Player.Armor[0].Defense
+  - Monster AI: weighted 50-roll table (50% attack, 10% parry, 14% block,
+    14% dodge, 12% run-if-low-HP)
+  - 9-state disposition system based on HP percentages
+  - Action modifiers: Block=half, Parry=0.6x, Special=1.75x(!!), Dodge=dex check
+  - 7 initiative texts for player-first, 3 for monster-first (all from original)
+
+  - Wilderness: Forest/Mountain/Swamp, 15 explorations/day
+  - Death: -2% XP, -20% coins, -1 Fame, +1 Faith
+  - NewDayForUser: restore psyche, +15 XP, reset explorations/spars
+
+  Created 20 monsters across 3 region JSON files.
+
+JEREMY:
+  ha, awesome. I had forgotten about some of this text, good memories :)
+  lets keep going
+
+
+PHASES 4-5: ECONOMY + LEVELING
+==============================
+  - Bank: deposit/withdraw (faithful to SlyBank.cp)
+  - Healer: Agatha heals, cost = hpToHeal * floor(avgLevel * 1.25)
+  - Herbalist: same mechanics, different flavor
+  - Armory: 15 weapons (Hands through Flaming Sword), 11 armor pieces
+    Buy/sell with all original snarky dialogue:
+    "FINE, I didn't want your stupid weapon anyway..."
+    "Okay, your loss. Have fun dying."
+  - Common Guild: level advancement using original cubic formula
+    GiveNewLevel per class (Fighters: +HP/Str, Mages: +Psyche, Thieves: +Spd/Dex)
+    All from Sly_CommonGuildUnit.cp
+
+
+PHASE 6: TAVERN + INN
+======================
+Tavern (all from Sly_TavernUnit.cp):
+  - 15 drinks with all original text (Fruit Juice through Auneletho's Surprise)
+  - Easter egg: ordering drink #16 kills you
+    "You just can't follow directions, can you? I said 1 to 15, NOT 16..."
+  - Flirt with Corenne: 8 options, success = 18% + Flirt1 rating
+    All 8 failure texts verbatim (the elbows, the dancing with Grego, the split lip)
+  - Talk to Lynx (he's busy with the barmaid)
+  - Hang Around (50% boring, 50% pickpocketed while sleeping)
+  - View Guild Rankings
+
+Inn (from SlyInn.cp):
+  - 10 rooms, configurable rate, lock security
+  - Owner management menu (change rate, list rooms, kick players, close inn,
+    transfer ownership)
+  - "Frank's Inn" — all original flavor text
+
+
+PHASES 7+9: ARENA + REMAINING LOCATIONS
+========================================
+Arena (from SlyArena.cp + Sly_ArenaUnit.cp):
+  - Direct PvP challenge (converts opponent to monster via User2Monster formula)
+  - Gladiator fights (scheduled, resolved at upkeep)
+  - Betting system with odds calculation
+  - Win: 10% opponent's spending XP + coins. Loss: dead + opponent gets rewards
+  - News system: "You have been slaughtered by [name]!"
+
+Tower: 4 random encounters with priests/wizards affecting Faith (±1-3)
+Blacksmith: 3 random outcomes (thrown out, weapon improved, weapon damaged)
+Jail: 3 random outcomes (see Night Hawk, get locked up and die, get weapon upgrade)
+
+All original text preserved verbatim.
+
+
+BUG FIX
+=======
+JEREMY:
+  I think I found a bug with some replacement text "You're both barely
+  standing... one more hit could end it!%!(EXTRA string=Wild Boar)"
+
+CLAUDE:
+  fmt.Sprintf had monName argument but no %s in the format string. Fixed.
+
+
+PHASE 8: GRID COMBAT
+=====================
+The crown jewel — the ANSI grid combat system.
+
+Read the full Sly_CombatUnit.cp (1170 lines):
+  - 10 terrain types with movement costs (grass=1, forest=2-4, water=998)
+  - 12×48 ANSI grid with colored terrain rendering
+  - IJKL movement with terrain cost deduction
+  - Water = instant death (faithful to original!)
+  - Dijkstra pathfinding for monster AI
+  - Ranged attacks with distance/dexterity hit chance
+  - Stats HUD showing HP, movement, psyche, weapons, armor, monster info
+  - Scrolling 5-line combat log
+  - Transitions to text combat when player reaches monster
+
+Generated 12 terrain maps: Forest-1/2/3, Mountain-1/2/3, Swamp-1/2/3, Arena-1/2/3
+
+
+TERRAIN EDITOR
+==============
+JEREMY:
+  I think we had a terrain editor as well, was that in there?
+
+CLAUDE:
+  Found the original terrain editor source in Sly_Terrain/ — built a faithful
+  recreation accessible via ./slycrel --editor
+  IJKL movement, number keys to paint, trace mode, save/load JSON files
+
+
+ORIGINAL ANSI ART
+=================
+JEREMY:
+  Maybe this was just in the pascal version, I thought we had a splash screen
+  with playing cards and a crystal ball on it. Was that around anywhere?
+
+CLAUDE:
+  Found it! In orig/Legacy Code/Original Slycrel Disk/Slycrel/Greater than 32K
+  Slycrel/Sly_Data/ANSI/ — all 12 original ANSI art files including the splash
+  screen with playing cards (Ace and Two) and crystal ball shape.
+
+  Converted all 12 original ANSI art files from the Pascal version to replace
+  the placeholder art.
+
+
+MORE BUG FIXES
+==============
+JEREMY:
+  some of the combat text doesn't wrap correctly, please fix that
+
+CLAUDE:
+  Added word wrapping to Outln — detects terminal width via term.GetSize(),
+  wraps at word boundaries, handles embedded newlines.
+
+JEREMY:
+  input requires enter rather than auto-accepting. so movement in combat is
+  pretty rough with ijkl for example
+
+CLAUDE:
+  Fixed LettersPrompt and YesNoQuestion to use single-keypress input (readOneKey)
+  when maxChars==1. Multi-character input (names, numbers) still requires Enter.
+
+JEREMY:
+  heh, i walked into a lake and died. lets add a reset day prompt after the
+  dead prompt
+
+CLAUDE:
+  Added DeadState — offers [N]ew Day (resurrect with penalties, back to login)
+  or [Q]uit. Updated all death paths (combat, jail, tavern drink #16, arena).
+
+
+PUBLISHING
+==========
+JEREMY:
+  want to make a nice readme and we can upload it to github so I can share it
+  with a few people?
+
+CLAUDE:
+  Created README.md with game description, quick start, controls, project
+  structure, architecture notes, history, and credits.
+  Added links to hermesbbs.com and the hermesbbs-orig repo.
+
+  Pushed to git@github.com:slycrel/slycrel-go.git
+  377 files, 7525 insertions — full game + original source (minus zip/svn).
+
+
+FINAL STATE
+===========
+All 10 planned phases complete (Phase 10 multi-user/web is future work).
+
+Go source files: ~30 files, ~4000 lines of Go
+Data files: 12 ANSI art screens, 20 monsters, 15 weapons, 11 armor,
+            12 terrain maps, JSON persistence
+Original source: included in orig/ for reference
+
+The game is playable end-to-end:
+  Create character → fight monsters → earn XP/coins → heal → buy equipment →
+  level up → challenge players → flirt with Corenne → get thrown out by Smith →
+  get locked in jail → order drink #16 and die → resurrect → do it all again
+
+https://github.com/slycrel/slycrel-go
+
+================================================================================
+  "Spray Cheese & Ritz Crackers" — from the original credits
+================================================================================

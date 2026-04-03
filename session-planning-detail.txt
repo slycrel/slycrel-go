@@ -1,0 +1,345 @@
+================================================================================
+  Slycrel: Planning Phase Detail
+  The exact exchange that led to the implementation plan
+  April 1, 2026
+================================================================================
+
+This captures the planning conversation verbatim — Jeremy's initial ask,
+Claude's questions, Jeremy's answers, and the full plan output that was
+approved before any code was written.
+
+
+================================================================================
+JEREMY'S OPENING MESSAGE
+================================================================================
+
+I've got a project for you. 30 years ago or so, a friend and I wrote a game
+for his Hermes 2 BBS system in pascal. Later, my friend's older brother ported
+it to c++. I'd like to get it ported to something modern, first running in the
+terminal, then potentially expand it out to a more client/server model to play
+with and extend. In addition, I'd like to use my new orchestration framework to
+help with some of the pieces of that
+(https://github.com/slycrel/openclaw-orchestration). Potentially confusing in
+this context, our game was named 'slycrel', and that's also the handle I've
+used online for the past few decades. :) please ask any questions you have and
+then we can make a plan and get going with it.
+
+
+================================================================================
+CLAUDE'S ANALYSIS & QUESTIONS
+================================================================================
+
+[Claude explored the orig/ directory, read SlyHeaders.h (all data structures),
+SlyMain.cp (game flow), General_Unit.cp (character management), the programmer's
+notes, and the README. Then presented this summary and questions:]
+
+Here's what I understand about the game, followed by my questions:
+
+## What Slycrel Is
+
+A **text-based RPG door game** for the Hermes II BBS (Mac), written by you
+(Jeremy Stone) and Dave Dolinar circa mid-90s. Bill Dolinar (Dave's brother)
+later ported it to C++. The game features:
+
+- **Character creation** - name, class (Fighter/Thief/Mage), gender, favorite
+  color, stat rolling
+- **A town hub** with locations: Arena, Bank, Common Guild, Herbalist, Inn,
+  Jail, Armory, Blacksmith, Tavern, Tower, Wilderness
+- **Two combat systems** - an ANSI graphical grid-based combat (12x48 map with
+  movement) and a text-based combat mode
+- **Monsters** loaded from data files with types (Humanoid, Orc, Goblin,
+  Undead, etc.)
+- **Weapons & armor** with stats (strike, range, cost, quality, etc.)
+- **Player-vs-player** via the Arena (gladiator challenges with betting)
+- **An Inn** that players can own and manage
+- **Leveling** via a cubic experience formula: f(x) = n*x^3 + f(x-1)
+- **State machine architecture** - the BBS framework drove flow via numbered
+  states and SetNextState()
+- **Data persistence** via typed file records (characters, weapons, armor,
+  monsters, terrain, etc.)
+
+## My Questions
+
+1. **Target language** - Do you have a preference? Python would pair naturally
+   with your openclaw-orchestration framework (which is Python). Rust or Go
+   would be good for performance. What are you thinking?
+
+2. **Scope of "port"** - Do you want a faithful recreation of the original game
+   mechanics, or is this more of a "spiritual successor" where we modernize the
+   design too (e.g., rethink the combat, add features from the programmer's
+   notes that never shipped)?
+
+3. **The BBS framework coupling** - The original was deeply tied to Hermes II's
+   external module system (TExternal, TPrivates, SetNextState, G_Outln, ANSI
+   codes). For the terminal version, are you happy with a clean rewrite that
+   preserves the game logic but uses a modern terminal UI approach?
+
+4. **Multiplayer** - The original was inherently multi-user (BBS door game -
+   arena PvP, inn ownership, etc.). For the initial terminal version, should we
+   target single-player first, or is multiplayer from the start important?
+
+5. **Where does openclaw-orchestration fit in?** - I see it's an autonomous
+   agent orchestration framework. Are you thinking of using it for things like
+   NPC AI behavior, game master narration, or procedural content generation?
+   Or something else entirely?
+
+6. **The zip file** (slycrel-dev-and-extras.zip, 28MB) - Should I unpack that?
+   It might have additional game data files (monster definitions, terrain maps,
+   ANSI art) that would be useful.
+
+
+================================================================================
+JEREMY'S ANSWERS
+================================================================================
+
+1- good question. Let's go with Go, as whatever we come up with might
+eventually end up being a back-end server for something new, and I think that's
+got pretty good terminal support.
+
+2- let's start with a faithful recreation. I'd then want to extend that to
+maybe a terminal in a web page via javascript or something.
+
+3- I was going to say yes. I reached out to my friend to let him know I was
+going to start this, and he sent me this: https://www.hermesbbs.com things have
+evolved since then I'm sure, but there's a part of me that wants to get it
+working with the old BBS system. Maybe we can do that in addition to getting a
+pure offline terminal version going. we can dig into this a little if you want,
+there are a lot of possibilities here... Mocking the BBS might be one route,
+rewriting things another, still a third option might be something
+client/server. So let's just go with a terminal app that re-creates the
+original intent.
+
+4- I'd like to code it as though it had multi-player, even though there would
+be no way for multiple people to play via the terminal. I suppose we could have
+a username/password login up front and do multiplayer that way, simulate the
+different BBS users.
+
+5- nothing so fancy as that to start... I was thinking maybe we use it to do
+things like researching the mac classic's resource fork data files that might
+come into play (that I barely remember how they work, just that they are a
+thing). So mostly sub-agent research in the background while we work together,
+but you're welcome to leverage it (or not) in any way that makes sense.
+
+6- I've pulled the source code from that zip file out already. There are other
+things in there like unfinished iPhone prototypes from I think 2009-10
+attempting to do this manually, but it was a bit painful and not well suited for
+it. And I think another game engine I played around with written with cocos2d
+in that era. You're welcome to have a look at any of that. I think? the
+relevant stuff should be extracted already, no secrets other than smaller
+context up front I suppose.
+
+
+================================================================================
+WHAT HAPPENED NEXT
+================================================================================
+
+Claude entered "plan mode" — a structured planning workflow where:
+
+1. Three exploration agents were launched in parallel:
+   - Agent 1: Read all combat systems, game mechanics, NPC interactions
+     (Sly_CombatUnit.cp, Sly_TextCombatUnit.cp, General_Unit.cp,
+     Sly_MainUnit.cp, Sly_TavernUnit.cp, Sly_InnUnit.cp, Sly_ArenaUnit.cp,
+     plus all Sly_Stages/ files)
+   - Agent 2: Read data files, terrain system, sysop editor, encryption,
+     Pascal-to-C++ bridge utilities
+   - Agent 3: Explored the Hermes BBS source on GitHub
+     (github.com/slycrel/hermesbbs-orig)
+
+2. A Plan agent designed the full Go architecture based on the exploration
+   results
+
+3. The final plan was written and presented for approval
+
+
+================================================================================
+THE PLAN (as approved before implementation began)
+================================================================================
+
+# Slycrel: Port to Go Terminal App
+
+## Context
+
+Slycrel is a text-based RPG "door game" written ~30 years ago by Jeremy Stone
+and Dave Dolinar for the Hermes II BBS (Mac Classic). Originally Pascal, later
+ported to C++ by Bill Dolinar. The goal is a faithful recreation in Go as a
+terminal application, architected for future expansion (web frontend, BBS
+integration, client/server).
+
+The original source lives at orig/Legacy Code/Slycrel updated/ and contains
+~70+ game states across 20+ source files implementing: character creation
+(3 classes), a town hub with 18 locations, dual combat systems (ANSI grid +
+text narrative), PvP arena with betting, inn ownership, tavern NPCs, economy,
+leveling, and daily upkeep.
+
+## Architecture
+
+### Project Structure
+
+  cmd/slycrel/main.go             // entry point
+  internal/
+    model/                        // Data structs (from SlyHeaders.h)
+      character.go, monster.go, weapon.go, armor.go,
+      inn.go, arena.go, town.go, combat.go, enums.go
+    game/                         // Game engine
+      engine.go                   // Session manager, multiplayer coordination
+      session.go                  // Per-player state, owns state machine
+      statemachine.go             // State registry, SetNextState/SetReturnState/Pop
+      state.go                    // State interface
+      states/                     // One file per location/flow
+        main.go, town.go, wilderness.go, combat_text.go, combat_grid.go,
+        tavern.go, inn.go, bank.go, healer.go, herbalist.go, armory.go,
+        arena.go, common_guild.go, tower.go, blacksmith.go, jail.go,
+        character_create.go, quit.go
+    mechanics/                    // Pure game logic, no I/O
+      chargen.go, leveling.go, damage.go, initiative.go, disposition.go,
+      resurrection.go, upkeep.go, pathfinding.go, terrain.go,
+      arena_calc.go, flirt.go, drinks.go
+    io/                           // I/O abstraction (replaces Hermes BBS framework)
+      terminal.go                 // IOProvider interface
+      ansi.go                     // ANSI escape helpers
+      terminal_impl.go            // Local terminal impl (x/term raw mode)
+      prompt.go                   // LettersPrompt, NumbersPrompt, YesNo
+    store/                        // Data persistence
+      store.go                    // Store interface
+      json_store.go               // JSON file implementation
+  data/                           // Game data files (JSON)
+    monsters/, weapons.json, armor.json, terrain/, ansi/, town_defaults.json
+  orig/                           // Legacy source (read-only reference)
+
+### Key Design Decisions
+
+1. Raw ANSI output, no TUI framework — The original speaks ANSI natively. Raw
+   output means the same stream works for terminal, telnet, or xterm.js
+   WebSocket. No Bubble Tea or tcell.
+
+2. Preserve the state machine — The original's SetNextState/SetReturnState/
+   PopReturnState pattern maps cleanly to a Go interface + map + stack. Each
+   ST_* function becomes a State struct. This makes 1:1 verification against
+   the original straightforward.
+
+3. IOProvider interface — Replaces all Hermes BBS I/O (G_Outln, G_ANSICode,
+   G_LettersPrompt, etc.). Implementations: local terminal now, WebSocket/
+   telnet later.
+
+4. JSON data files — Replaces Mac Classic binary TItemFile<T> records.
+   Human-readable, easy to edit and extend.
+
+5. Multi-player ready from start — GameEngine manages sessions keyed by
+   username. Shared Store with sync.RWMutex. Single-session for terminal, but
+   the architecture supports concurrent sessions.
+
+6. internal/ convention — All game code unexported. Only cmd/slycrel/ is the
+   public entry point.
+
+### Core Interfaces
+
+IOProvider (replaces Hermes BBS callbacks):
+  - Outln(text, newline, color), ANSICode(code), Cr(), ClearScreen()
+  - LettersPrompt(prompt, allowed, maxChars, capitalize, autoAccept) string
+  - NumbersPrompt(prompt, allowed, max, min) string
+  - YesNoQuestion(prompt) bool
+  - ShowANSIFile(name) error
+
+State (game flow):
+  - ID() StateID
+  - Enter(ctx *Session) — does I/O and calls ctx.SM.SetNextState()
+
+Store (persistence):
+  - CRUD for characters, monsters, weapons, armor, inn, arena, town config, mail
+
+## Implementation Phases
+
+### Phase 1: Foundation
+- go mod init, directory structure, all model structs
+- IOProvider interface + local terminal impl (x/term raw mode, ANSI output)
+- Store interface + JSON file impl (characters only)
+- StateMachine (SetNextState/SetReturnState/Pop)
+- Session, GameEngine, main.go wiring
+- Deliverable: app launches, shows blank terminal, quits cleanly
+
+### Phase 2: Character Creation + Town Hub
+- RollChar (stat ranges per class from Sly_MainUnit.cp)
+- Character creation flow (name, class, gender, color, reroll, view)
+- Town menu with routing stubs for all locations
+- Save/quit flow, Opening ANSI screen
+- Deliverable: create character, view stats, enter town, save, quit
+
+### Phase 3: Text Combat
+- Damage formulas (from Sly_TextCombatUnit.cp)
+- Initiative, disposition system (9 states)
+- Wilderness exploration (daily limit: 15)
+- Full text combat loop (Attack/Block/Parry/Dodge/Special/Run)
+- Monster data files, random encounter selection
+- Death/resurrection mechanics
+- Deliverable: explore, fight monsters, gain XP/coins, die and resurrect
+
+### Phase 4: Economy
+- Bank (deposit/withdraw)
+- Armory (buy/sell weapons/armor)
+- Healer (HP restoration), Herbalist (Psyche restoration)
+- Equipment data files
+- Deliverable: full economic loop
+
+### Phase 5: Leveling
+- f(x) = LevelUpDifficulty * x^3 + f(x-1), base 50 XP
+- Common Guild level advancement, stat increases per class
+- Deliverable: characters level up
+
+### Phase 6: Social (Tavern + Inn)
+- Tavern: drinks, Lynx, Corenne flirt mechanics, hang around
+- Inn: room rental, ownership, daily charges
+- Deliverable: full tavern and inn
+
+### Phase 7: Arena + PvP
+- Gladiator challenges, betting, odds calculation
+- Fight resolution, payoffs, mail/news system
+- Daily upkeep (resolve fights, inn charges, resurrection)
+- Deliverable: PvP system working
+
+### Phase 8: Grid Combat
+- Terrain types, movement costs, 12x48 map rendering
+- Dijkstra pathfinding for monster AI
+- Player movement (IJKL keys), ranged attacks
+- Deliverable: full ANSI grid combat
+
+### Phase 9: Remaining Locations + Polish
+- Tower, Blacksmith, Jail, class-specific guild stubs
+- High scores, all ANSI art menus
+- Daily upkeep scheduler
+
+### Phase 10: Multi-user + Future Frontends
+- TCP/telnet server, WebSocket + xterm.js
+- Concurrent session management
+- User authentication with password hashing
+
+## Key Source References
+- orig/.../Sly_Source/SlyHeaders.h — all data structures, constants, enums
+- orig/.../Sly_Stages/SlyMain.cp — main flow, town routing, character creation
+- orig/.../Sly_Shared/Sly_TextCombatUnit.cp — damage formulas, combat loop
+- orig/.../Sly_Shared/Sly_MainUnit.cp — RollChar, upkeep, resurrection
+- orig/.../Sly_Shared/Sly_CombatUnit.cp — grid combat, pathfinding
+- orig/.../Sly_Shared/General_Unit.cp — character persistence, guild lists
+- orig/.../Sly_Shared/Sly_TavernUnit.cp — drinks, flirt mechanics
+- orig/.../Sly_Shared/Sly_ArenaUnit.cp — arena/PvP calculations
+- https://github.com/slycrel/hermesbbs-orig — original BBS source for API ref
+
+## Verification
+- After each phase: manually play through the implemented features in terminal
+- Compare game flow against original source state-by-state
+- Verify formulas by running same inputs through Go mechanics and comparing
+  to C++ expected outputs
+- Test multiplayer readiness: create multiple characters, verify shared state
+
+
+================================================================================
+PLAN APPROVAL & IMPLEMENTATION
+================================================================================
+
+Jeremy approved the plan, and implementation began immediately. All 9 playable
+phases were completed in a single session (~4 hours), with Jeremy testing the
+game between phases and reporting bugs that were fixed in real-time.
+
+The full session log is in session-log.txt.
+The source code is at https://github.com/slycrel/slycrel-go
+
+================================================================================
