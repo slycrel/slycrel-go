@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slycrel — Realm of Adventure</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Login screen -->
+    <div id="login-screen">
+      <div class="login-box">
+        <pre class="logo">
+  _____ _                     _
+ / ____| |                   | |
+| (___ | |_   _  ___ _ __ ___| |
+ \___ \| | | | |/ __| '__/ _ \ |
+ ____) | | |_| | (__| | |  __/ |
+|_____/|_|\__, |\___|_|  \___|_|
+           __/ |
+          |___/
+        </pre>
+        <p class="tagline">Realm of Adventure</p>
+        <div class="login-form">
+          <label for="username">Enter your name, traveller:</label>
+          <input id="username" type="text" maxlength="20" placeholder="your username" autocomplete="off" />
+          <button id="enter-btn">Enter the Realm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game screen -->
+    <div id="game-screen" class="hidden">
+      <div id="main-pane">
+        <div id="terminal-header">
+          <span class="title">Realm of Slycrel</span>
+          <span id="connection-status" class="status-dot connected" title="Connected"></span>
+        </div>
+        <div id="terminal-output"></div>
+        <div id="input-area">
+          <!-- Dynamic prompt UI is injected here by JS -->
+        </div>
+      </div>
+
+      <div id="side-pane">
+        <div class="side-section">
+          <h3>API Explorer</h3>
+          <div class="api-buttons">
+            <button class="api-btn" data-endpoint="/health">Health</button>
+            <button class="api-btn" data-endpoint="/api/characters">Characters</button>
+            <button class="api-btn" data-endpoint="/api/monsters">Monsters</button>
+            <button class="api-btn" data-endpoint="/api/weapons">Weapons</button>
+            <button class="api-btn" data-endpoint="/api/armor">Armor</button>
+          </div>
+          <pre id="api-output"></pre>
+        </div>
+
+        <div class="side-section">
+          <h3>Session</h3>
+          <div id="session-info">
+            <p>Player: <span id="player-name">—</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="client.js"></script>
+</body>
+</html>
