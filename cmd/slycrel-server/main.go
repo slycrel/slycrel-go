@@ -32,8 +32,11 @@ func main() {
 	flag.Parse()
 
 	// Auto-detect paths relative to the binary location.
-	binDir, _ := os.Executable()
-	binDir = filepath.Dir(binDir)
+	execPath, err := os.Executable()
+	if err != nil {
+		log.Fatalf("os.Executable: %v", err)
+	}
+	binDir := filepath.Dir(execPath)
 	repoRoot := findRepoRoot(binDir)
 
 	if *dataDir == "" {
@@ -66,7 +69,9 @@ func main() {
 	// Health check
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		if err := json.NewEncoder(w).Encode(map[string]string{"status": "ok"}); err != nil {
+			log.Printf("health: encode error: %v", err)
+		}
 	})
 
 	// API endpoints
@@ -131,10 +136,14 @@ func apiHandler(fn func() (any, error)) http.HandlerFunc {
 		data, err := fn()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			if encErr := json.NewEncoder(w).Encode(map[string]string{"error": err.Error()}); encErr != nil {
+				log.Printf("apiHandler: encode error response: %v", encErr)
+			}
 			return
 		}
-		json.NewEncoder(w).Encode(data)
+		if encErr := json.NewEncoder(w).Encode(data); encErr != nil {
+			log.Printf("apiHandler: encode data: %v", encErr)
+		}
 	}
 }
 

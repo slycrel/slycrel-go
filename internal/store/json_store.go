@@ -462,11 +462,35 @@ func saveJSON(path string, v any) error {
 	return atomicWrite(path, data)
 }
 
-// atomicWrite writes data to a temp file then renames it to path.
+// atomicWrite writes data to a uniquely-named temp file in the same directory
+// as path, then renames it atomically. The temp file is always cleaned up on
+// failure, and the unique name prevents races when multiple goroutines write
+// to the same destination concurrently.
 func atomicWrite(path string, data []byte) error {
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0644); err != nil {
+	dir := filepath.Dir(path)
+	f, err := os.CreateTemp(dir, ".tmp-")
+	if err != nil {
 		return err
 	}
-	return os.Rename(tmp, path)
+	tmpPath := f.Name()
+	// Always remove the temp file if we don't successfully rename it.
+	committed := false
+	defer func() {
+		if !committed {
+			os.Remove(tmpPath)
+		}
+	}()
+
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		return err
+	}
+	committed = true
+	return nil
 }
