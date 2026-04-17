@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -257,11 +259,14 @@ func (w *WebSocketTerminal) ReadLine(prompt string, maxLen int) string {
 }
 
 func (w *WebSocketTerminal) ShowANSIFile(name string) error {
-	// Let the client know an ANSI file would be shown here.
-	// We send it as plain notification; if the file content were available
-	// we'd send it as raw text — skipping for now so as not to send
-	// binary ANSI art over the wire.
-	_ = w.send(WSMessage{Type: "ansi_file", Text: name})
+	path := filepath.Join(w.dataDir, "ansi", name+".ans")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		log.Printf("ws: ShowANSIFile %q: %v", name, err)
+		_ = w.send(WSMessage{Type: "ansi_file", Text: name})
+		return err
+	}
+	_ = w.send(WSMessage{Type: "ansi_file", Text: string(data)})
 	return nil
 }
 

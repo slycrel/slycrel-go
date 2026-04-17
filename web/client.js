@@ -80,12 +80,13 @@ function handleServerMessage(msg) {
       break;
     case 'clear':
       terminalOutput.innerHTML = '';
+      ansiState = { fg: null, bg: null, bold: false };
       break;
     case 'ansi':
-      // Raw ANSI codes are no-ops in the browser.
+      renderAnsiString(msg.text || '');
       break;
     case 'ansi_file':
-      appendOutput(`[ANSI art: ${msg.text}]\n`, 0);
+      renderAnsiString(msg.text || '');
       break;
     case 'error':
       appendOutput((msg.text || 'Server error') + '\n', 6);
@@ -110,7 +111,92 @@ function handleServerMessage(msg) {
   }
 }
 
-// ── Terminal output ────────────────────────────────────
+// ── ANSI renderer ──────────────────────────────────────
+// Standard 16-color ANSI palette
+const ANSI_PALETTE = [
+  '#000000','#aa0000','#00aa00','#aa5500','#0000aa','#aa00aa','#00aaaa','#aaaaaa',
+  '#555555','#ff5555','#55ff55','#ffff55','#5555ff','#ff55ff','#55ffff','#ffffff',
+];
+
+let ansiState = { fg: null, bg: null, bold: false };
+
+function renderAnsiString(str) {
+  let i = 0, buf = '';
+  while (i < str.length) {
+    const ch = str[i];
+    if (ch === '\x1b' && str[i + 1] === '[') {
+      if (buf) { flushAnsiSpan(buf); buf = ''; }
+      let j = i + 2;
+      while (j < str.length && !/[A-Za-z]/.test(str[j])) j++;
+      const cmd = str[j] || '';
+      const raw = str.slice(i + 2, j);
+      const params = raw.split(';').map(p => (p === '' ? 0 : parseInt(p, 10)));
+      applyAnsiEsc(cmd, params);
+      i = j + 1;
+    } else if (ch === '\r') {
+      if (buf) { flushAnsiSpan(buf); buf = ''; }
+      // Overwrite current line by clearing it and starting fresh.
+      const last = terminalOutput.lastElementChild;
+      if (last) last.innerHTML = '';
+      i++;
+    } else if (ch === '\n') {
+      if (buf) { flushAnsiSpan(buf); buf = ''; }
+      terminalOutput.appendChild(document.createElement('br'));
+      i++;
+    } else {
+      buf += ch;
+      i++;
+    }
+  }
+  if (buf) flushAnsiSpan(buf);
+  terminalOutput.scrollTop = terminalOutput.scrollHeight;
+}
+
+function flushAnsiSpan(text) {
+  const s = document.createElement('span');
+  s.textContent = text;
+  const css = [];
+  if (ansiState.fg) css.push('color:' + ansiState.fg);
+  if (ansiState.bg) css.push('background:' + ansiState.bg);
+  if (ansiState.bold) css.push('font-weight:bold');
+  if (css.length) s.style.cssText = css.join(';');
+  terminalOutput.appendChild(s);
+}
+
+function applyAnsiEsc(cmd, params) {
+  switch (cmd) {
+    case 'm': // SGR
+      for (const p of (params.length ? params : [0])) {
+        if      (p === 0)  { ansiState = { fg: null, bg: null, bold: false }; }
+        else if (p === 1)  { ansiState.bold = true; }
+        else if (p === 22) { ansiState.bold = false; }
+        else if (p >= 30 && p <= 37) {
+          ansiState.fg = ANSI_PALETTE[p - 30 + (ansiState.bold ? 8 : 0)];
+        }
+        else if (p === 39) { ansiState.fg = null; }
+        else if (p >= 40 && p <= 47) { ansiState.bg = ANSI_PALETTE[p - 40]; }
+        else if (p === 49) { ansiState.bg = null; }
+        else if (p >= 90 && p <= 97)  { ansiState.fg = ANSI_PALETTE[p - 90 + 8]; }
+        else if (p >= 100 && p <= 107){ ansiState.bg = ANSI_PALETTE[p - 100 + 8]; }
+      }
+      break;
+    case 'J': // Erase display
+      if (params[0] === 2 || params[0] === 0) {
+        terminalOutput.innerHTML = '';
+        ansiState = { fg: null, bg: null, bold: false };
+      }
+      break;
+    case 'K': // Erase line
+      { const last = terminalOutput.lastElementChild; if (last) last.innerHTML = ''; }
+      break;
+    // H/f cursor position and A/B/C/D movement: approximate only
+    case 'H': case 'f':
+      terminalOutput.appendChild(document.createElement('br'));
+      break;
+  }
+}
+
+// ── Terminal output (plain color-coded) ───────────────
 function appendOutput(text, color) {
   const span = document.createElement('span');
   span.className = `c${color}`;
