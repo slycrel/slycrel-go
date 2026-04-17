@@ -12,16 +12,59 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 
 	"github.com/gorilla/websocket"
-	slyio "github.com/slycrel/slycrel/internal/io"
 	"github.com/slycrel/slycrel/internal/game"
 	"github.com/slycrel/slycrel/internal/game/states"
+	slyio "github.com/slycrel/slycrel/internal/io"
 	"github.com/slycrel/slycrel/internal/store"
 )
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
+}
+
+// sessionCounter generates monotonically increasing session IDs.
+var sessionCounter atomic.Int64
+
+// peer tracks an active player connection.
+// done is closed when the session goroutine exits.
+type peer struct {
+	terminal  *slyio.WebSocketTerminal
+	sessionID string
+	done      chan struct{}
+}
+
+// peerRegistry is the mutex-protected map of active WebSocket sessions.
+// It prevents duplicate logins and enables transparent reconnection.
+type peerRegistry struct {
+	mu    sync.Mutex
+	peers map[string]*peer
+}
+
+func newPeerRegistry() *peerRegistry {
+	return &peerRegistry{peers: make(map[string]*peer)}
+}
+
+func (r *peerRegistry) get(username string) (*peer, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	p, ok := r.peers[username]
+	return p, ok
+}
+
+func (r *peerRegistry) add(username string, p *peer) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.peers[username] = p
+}
+
+func (r *peerRegistry) remove(username string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.peers, username)
 }
 
 func main() {
@@ -61,6 +104,8 @@ func main() {
 	engine := game.NewGameEngine(st, *dataDir)
 	engine.RegisterStates = states.RegisterAll
 
+	registry := newPeerRegistry()
+
 	mux := http.NewServeMux()
 
 	// Static files
@@ -81,12 +126,12 @@ func main() {
 	mux.HandleFunc("/api/monsters", apiHandler(func() (any, error) {
 		regions := []string{"forest", "mountain", "swamp"}
 		result := map[string]any{}
-		for _, r := range regions {
-			m, err := st.LoadMonsters(r)
+		for _, region := range regions {
+			m, err := st.LoadMonsters(region)
 			if err != nil {
-				return nil, fmt.Errorf("loading %s monsters: %w", r, err)
+				return nil, fmt.Errorf("loading %s monsters: %w", region, err)
 			}
-			result[r] = m
+			result[region] = m
 		}
 		return result, nil
 	}))
@@ -110,22 +155,58 @@ func main() {
 			log.Printf("ws upgrade error: %v", err)
 			return
 		}
-		defer conn.Close()
 
 		log.Printf("ws: player %q connected from %s", username, r.RemoteAddr)
 
-		io := slyio.NewWebSocketTerminal(conn, *dataDir)
-		if err := engine.RunLocalSession(io, username); err != nil {
-			log.Printf("ws: session error for %q: %v", username, err)
+		// Reconnect path: swap the WS connection into the running session goroutine.
+		if existing, ok := registry.get(username); ok {
+			log.Printf("ws: reconnecting player %q (session %s)", username, existing.sessionID)
+			existing.terminal.SwapConn(conn)
+			existing.terminal.SendSessionRestored(username, existing.sessionID)
+			// Hold the HTTP handler open until the session ends.
+			<-existing.done
+			log.Printf("ws: player %q session ended after reconnect", username)
+			return
 		}
 
-		log.Printf("ws: player %q disconnected", username)
+		// New session: create terminal, register peer, start session goroutine.
+		sessionID := newSessionID(username)
+		terminal := slyio.NewWebSocketTerminal(conn, *dataDir)
+		terminal.SendSessionInit(username, sessionID)
+
+		done := make(chan struct{})
+		registry.add(username, &peer{
+			terminal:  terminal,
+			sessionID: sessionID,
+			done:      done,
+		})
+
+		go func() {
+			defer func() {
+				registry.remove(username)
+				close(done)
+				log.Printf("ws: player %q disconnected (session %s)", username, sessionID)
+			}()
+
+			if err := engine.RunLocalSession(terminal, username, sessionID); err != nil {
+				log.Printf("ws: session error for %q: %v", username, err)
+			}
+			terminal.SendSessionEnd()
+		}()
+
+		// Block until session ends so the HTTP handler keeps the WS alive.
+		<-done
 	})
 
 	log.Printf("Slycrel server listening on %s", *addr)
 	if err := http.ListenAndServe(*addr, mux); err != nil {
 		log.Fatalf("server: %v", err)
 	}
+}
+
+// newSessionID returns a unique session identifier for a player.
+func newSessionID(username string) string {
+	return fmt.Sprintf("%s-%d", username, sessionCounter.Add(1))
 }
 
 // apiHandler wraps a data-loading function and returns a JSON HTTP handler.

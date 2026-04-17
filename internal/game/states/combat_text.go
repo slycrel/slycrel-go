@@ -57,6 +57,10 @@ func (SetupTextCombatState) Enter(s *game.Session) {
 	gotInit := mechanics.RollInitiative(s.Character.Movement, s.Monster.Movement)
 	showInitiativeText(s, gotInit)
 
+	if fn := s.Hooks.OnCombatStart; fn != nil {
+		fn(s.Monster.Name, s.MonHitPoints, s.Character.HitPoints, s.Character.MaxHP, "text")
+	}
+
 	s.SetNextState("text_combat_loop")
 }
 
@@ -390,6 +394,9 @@ func (UserKilledState) Enter(s *game.Session) {
 	// Death penalty: lose 1/3 of coins on hand
 	s.Character.CoinsHand -= s.Character.CoinsHand / 3
 	s.Character.Alive = false
+	if fn := s.Hooks.OnCombatEnd; fn != nil {
+		fn(false, false, 0, "You have been killed.")
+	}
 
 	s.Store.SaveCharacter(s.Character)
 	s.SetNextState("dead")
@@ -428,6 +435,9 @@ func (UserVictoriousState) Enter(s *game.Session) {
 	// Show current HP
 	s.IO.Outln(fmt.Sprintf("Hit Points: %d/%d", s.Character.HitPoints, s.Character.MaxHP), true, 1)
 	s.IO.Cr()
+	if fn := s.Hooks.OnCombatEnd; fn != nil {
+		fn(true, false, s.Character.HitPoints, fmt.Sprintf("You defeated the %s!", s.Monster.Name))
+	}
 
 	s.Character.Location = model.TheWildernessMenu
 	s.IO.PausePrompt("-=Press A Key=-")
@@ -454,6 +464,9 @@ func (UserEscapesState) Enter(s *game.Session) {
 	s.IO.Outln("You Succeed!", true, 6)
 	s.IO.Cr()
 
+	if fn := s.Hooks.OnCombatEnd; fn != nil {
+		fn(false, true, s.Character.HitPoints, "You escaped.")
+	}
 	s.IO.PausePrompt("--press a key--")
 	if s.Character.Location == model.TheArenaCombat {
 		s.Character.Location = model.TheArenaMenu
@@ -477,6 +490,9 @@ func (MonsterRunsState) Enter(s *game.Session) {
 	s.IO.Outln("The monster ran away from you! What a coward.", true, 1)
 	s.IO.Cr()
 
+	if fn := s.Hooks.OnCombatEnd; fn != nil {
+		fn(true, false, s.Character.HitPoints, "The monster fled!")
+	}
 	s.IO.PausePrompt("-More-")
 	if s.Character.Location == model.TheArenaCombat {
 		s.Character.Location = model.TheArenaMenu

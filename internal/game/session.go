@@ -6,6 +6,20 @@ import (
 	"github.com/slycrel/slycrel/internal/store"
 )
 
+// SessionHooks allows the transport layer to receive structured notifications
+// at key game state transitions without coupling game logic to WS transport.
+// All fields are optional; states check for nil before calling.
+type SessionHooks struct {
+	// OnCharacterLoaded is called once when the player's character is loaded.
+	OnCharacterLoaded func(char *model.Character)
+	// OnLevelUp is called after the character gains a level.
+	OnLevelUp func(class string, newLevel, maxHP int)
+	// OnCombatStart is called at the start of text or grid combat.
+	OnCombatStart func(monsterName string, monsterHP, playerHP, playerMaxHP int, mode string)
+	// OnCombatEnd is called when combat resolves (win/loss/escape).
+	OnCombatEnd func(won, escaped bool, playerHP int, message string)
+}
+
 // Session represents a single player's game session.
 // This combines the roles of TSlyPrivates (per-node state) and the
 // runtime context that each state handler needs.
@@ -14,6 +28,10 @@ type Session struct {
 	IO    slyio.IOProvider
 	Store store.Store
 	SM    *StateMachine
+
+	// Session identity
+	SessionID string
+	Hooks     SessionHooks
 
 	// Current player
 	Character  *model.Character

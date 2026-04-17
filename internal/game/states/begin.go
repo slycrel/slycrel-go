@@ -64,6 +64,9 @@ func (EnterSlycrelState) Enter(s *game.Session) {
 	}
 
 	s.Character = char
+	if fn := s.Hooks.OnCharacterLoaded; fn != nil {
+		fn(char)
+	}
 
 	// Check if dead today
 	today := todayDate()

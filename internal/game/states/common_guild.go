@@ -74,6 +74,9 @@ func (TryNewLevelState) Enter(s *game.Session) {
 		s.IO.Outln("\"Finally someone who is ready to go up,\" grins the GuildMaster.", true, 5)
 		mechanics.GiveNewLevel(c)
 		s.IO.Outln(fmt.Sprintf("You have gained one level! You are now level %d!", c.Level()), true, 3)
+		if fn := s.Hooks.OnLevelUp; fn != nil {
+			fn(string(c.CharClass), c.Level(), c.MaxHP)
+		}
 		s.IO.Cr()
 
 		// Show new stats
