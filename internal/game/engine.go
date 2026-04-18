@@ -32,6 +32,42 @@ func NewGameEngine(st store.Store, dataDir string) *GameEngine {
 	}
 }
 
+// RunWSSession creates and runs a WebSocket-backed game session.
+// Returns an error immediately if the username already has an active session,
+// after sending an error message to the client. Session is removed from the engine
+// map on return (clean close, timeout, or disconnect).
+func (e *GameEngine) RunWSSession(wss *slyio.WSSession, username string) error {
+	cfg, err := e.Store.LoadTownConfig()
+	if err != nil {
+		return fmt.Errorf("loading town config: %w", err)
+	}
+
+	session := NewSession(wss, e.Store, username)
+	if e.RegisterStates != nil {
+		e.RegisterStates(session.SM)
+	}
+	session.TownConfig = cfg
+
+	// Prevent duplicate sessions for the same username. Check + register atomically.
+	e.mu.Lock()
+	if _, exists := e.sessions[username]; exists {
+		e.mu.Unlock()
+		_ = wss.SendErrorMsg("already logged in from another connection")
+		return fmt.Errorf("session already active for %q", username)
+	}
+	e.sessions[username] = session
+	e.mu.Unlock()
+
+	defer func() {
+		e.mu.Lock()
+		delete(e.sessions, username)
+		e.mu.Unlock()
+	}()
+
+	session.Run()
+	return nil
+}
+
 // RunLocalSession creates and runs a single-player terminal session.
 // This is the entry point for the terminal app.
 func (e *GameEngine) RunLocalSession(io slyio.IOProvider, username string) error {

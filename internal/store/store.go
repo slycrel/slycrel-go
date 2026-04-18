@@ -50,4 +50,8 @@ type Store interface {
 	WriteNews(playerBBSName string, message string) error
 	ReadNews(playerBBSName string) (string, error)
 	ClearNews(playerBBSName string) error
+
+	// Auth
+	AuthenticatePlayer(bbsName, password string) error
+	SetPlayerPassword(bbsName, password string) error
 }

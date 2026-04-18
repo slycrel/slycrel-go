@@ -10,11 +10,14 @@ import (
 	"strings"
 	"sync"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/slycrel/slycrel/internal/model"
 )
 
 var (
-	ErrNotFound = errors.New("not found")
+	ErrNotFound    = errors.New("not found")
+	ErrUnauthorized = errors.New("authentication failed")
 )
 
 // JSONStore implements Store using JSON files on disk.
@@ -460,6 +463,45 @@ func saveJSON(path string, v any) error {
 		return err
 	}
 	return atomicWrite(path, data)
+}
+
+// --- Auth ---
+
+// AuthenticatePlayer checks the bcrypt password hash for the given BBS username.
+// Returns ErrUnauthorized on any failure (user not found, no password set, wrong password)
+// to prevent username enumeration.
+func (s *JSONStore) AuthenticatePlayer(bbsName, password string) error {
+	s.mu.RLock()
+	char, err := s.findCharByBBSName(bbsName)
+	s.mu.RUnlock()
+	if err != nil || char.PasswordHash == "" {
+		return ErrUnauthorized
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(char.PasswordHash), []byte(password)); err != nil {
+		return ErrUnauthorized
+	}
+	return nil
+}
+
+// SetPlayerPassword hashes and stores a new password for the given BBS username.
+func (s *JSONStore) SetPlayerPassword(bbsName, password string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("hashing password: %w", err)
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	chars, err := s.loadCharacters()
+	if err != nil {
+		return err
+	}
+	for i, c := range chars {
+		if strings.EqualFold(c.BBSName, bbsName) {
+			chars[i].PasswordHash = string(hash)
+			return s.saveCharacters(chars)
+		}
+	}
+	return ErrNotFound
 }
 
 // atomicWrite writes data to a temp file then renames it to path.

@@ -39,6 +39,7 @@ type Character struct {
 	FightsWon          int64     `json:"fightsWon"`
 	Weapons            [3]Weapon `json:"weapons"`            // [0]=melee, [1]=ranged, [2]=extra
 	Armor              [2]Armor  `json:"armor"`              // [0]=body, [1]=shield
+	PasswordHash       string    `json:"passwordHash,omitempty"` // bcrypt hash; empty = no password set
 }
 
 // GenderString returns "Male" or "Female".

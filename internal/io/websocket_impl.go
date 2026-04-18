@@ -89,7 +89,7 @@ func (s *WSSession) send(msg ServerMsg) error {
 func (s *WSSession) recv() (ClientMsg, error) {
 	s.conn.SetDeadline(time.Now().Add(wsReadTimeout))
 	var raw []byte
-	if _, err := s.conn.Read(raw); err != nil {
+	if err := websocket.Message.Receive(s.conn, &raw); err != nil {
 		s.disconnect()
 		return ClientMsg{}, err
 	}
@@ -106,6 +106,11 @@ func (s *WSSession) recv() (ClientMsg, error) {
 		return ClientMsg{}, fmt.Errorf("version mismatch")
 	}
 	return msg, nil
+}
+
+// SendErrorMsg sends a fatal error message to the client.
+func (s *WSSession) SendErrorMsg(msg string) error {
+	return s.send(ServerMsg{Type: MsgTypeError, ErrMsg: msg})
 }
 
 // sendPromptAndRecv sends a prompt ServerMsg and waits for the matching InputMsg.
@@ -298,32 +303,59 @@ func (s *WSSession) ShowANSIFile(name string) error {
 
 // --- WebSocket upgrade helper (for use in cmd/server) ---
 
-// WSUpgrader returns an http.Handler that upgrades HTTP connections to WebSocket
-// and invokes handler with the established WSSession.
+// Authenticator validates a username + password pair.
+// Return nil on success, any error on failure (error message is not sent to client).
+type Authenticator func(username, password string) error
+
+// WSUpgrader returns an http.Handler that upgrades HTTP connections to WebSocket,
+// validates the MsgTypeHello handshake (protocol version + auth), and invokes
+// handler with the authenticated WSSession.
 //
-// Authentication is the caller's responsibility: inspect the *http.Request
-// before calling this, or validate credentials in the first ClientMsg (MsgTypeHello).
-func WSUpgrader(dataDir string, handler func(sess *WSSession, username string)) http.Handler {
+// Connection sequence:
+//
+//	Client → Server : { type:"hello", v:1, username:"x", password:"y" }
+//	Server → Client : { type:"hello", v:1, seq:1 }           (auth OK)
+//	    — or —
+//	Server → Client : { type:"error", v:1, err:"..." }        (auth fail / version mismatch)
+func WSUpgrader(dataDir string, auth Authenticator, handler func(sess *WSSession, username string)) http.Handler {
 	return websocket.Handler(func(conn *websocket.Conn) {
-		// Expect MsgTypeHello as the first message for auth + version check.
+		// Expect MsgTypeHello as the first message. Enforce a tight deadline so
+		// slow/invalid clients don't hold a goroutine open indefinitely.
 		conn.SetDeadline(time.Now().Add(30 * time.Second))
+
 		var raw []byte
-		if _, err := conn.Read(raw); err != nil {
+		if err := websocket.Message.Receive(conn, &raw); err != nil {
 			return
 		}
 		var hello ClientMsg
 		if err := json.Unmarshal(raw, &hello); err != nil || hello.Type != MsgTypeHello {
 			return
 		}
-		if hello.Version != WSProtocolVersion {
-			data, _ := json.Marshal(ServerMsg{
-				Version: WSProtocolVersion,
-				Type:    MsgTypeError,
-				ErrMsg:  fmt.Sprintf("protocol version mismatch: server=%d client=%d", WSProtocolVersion, hello.Version),
-			})
+
+		sendErr := func(msg string) {
+			data, _ := json.Marshal(ServerMsg{Version: WSProtocolVersion, Type: MsgTypeError, ErrMsg: msg})
 			conn.Write(data) //nolint:errcheck
+		}
+
+		if hello.Version != WSProtocolVersion {
+			sendErr(fmt.Sprintf("protocol version mismatch: server=%d client=%d", WSProtocolVersion, hello.Version))
 			return
 		}
+		if hello.Username == "" {
+			sendErr("username required")
+			return
+		}
+		if err := auth(hello.Username, hello.Password); err != nil {
+			sendErr("authentication failed")
+			return
+		}
+
+		// Ack the hello and clear the handshake deadline before handing off.
+		ack, _ := json.Marshal(ServerMsg{Version: WSProtocolVersion, Type: MsgTypeHello, Seq: 1})
+		if _, err := conn.Write(ack); err != nil {
+			return
+		}
+		conn.SetDeadline(time.Time{}) // WSSession manages its own per-op deadlines
 
 		sess := NewWSSession(conn, dataDir)
 		handler(sess, hello.Username)
