@@ -17,6 +17,24 @@ You are an adventurer in the realm of Slycrel. Create a character — Fighter, T
 
 The game preserves the original's mechanics, flavor text, and BBS-era charm — including the easter eggs.
 
+## Headless Server (Browser Client)
+
+`cmd/server` runs as a pure headless WebSocket server — no local terminal I/O, no static assets served. Browser (or any WebSocket client) connects to `/ws`, authenticates, and plays entirely via JSON message exchange. The local `cmd/slycrel` binary is a separate entry point for terminal play.
+
+```bash
+# Build and run the headless server
+go build -o server ./cmd/server/
+./server --port 8080 --data-dir ./data --state-dir ./state
+
+# WebSocket endpoint
+ws://localhost:8080/ws
+
+# Health check
+curl http://localhost:8080/health
+```
+
+See `internal/io/ws_protocol.go` for the full client↔server message schema.
+
 ## Quick Start
 
 ```bash

@@ -32,6 +32,7 @@ func main() {
 	port := flag.Int("port", 8080, "TCP port to listen on")
 	dataDir := flag.String("data-dir", "./data", "game asset directory (monsters, weapons, ansi)")
 	stateDir := flag.String("state-dir", "./state", "writable state directory (characters, inn, etc.)")
+	_ = flag.Bool("headless", true, "run as a headless server (browser/WebSocket clients only; no local terminal I/O) — this is the default and only mode for cmd/server")
 	flag.Parse()
 
 	if err := os.MkdirAll(*stateDir, 0755); err != nil {
