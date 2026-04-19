@@ -15,6 +15,7 @@ const CELL_H := 20.0
 const HUD_TOP_PAD := 20.0
 const HUD_COL_W := 200.0        # column width when laying out HUD fields side-by-side
 const FONT_PX := 14
+const ENTITY_FONT_PX := 18
 const HUD_FONT_PX := 13
 const HUD_LINE_H := 18.0
 
@@ -62,6 +63,15 @@ func _draw() -> void:
 	var cols: int = int(current_scene.get("cols", 48))
 	var rows: int = int(current_scene.get("rows", 12))
 	var terrain = current_scene.get("terrain", [])
+	var entities = current_scene.get("entities", [])
+
+	# Build an entity lookup keyed on (col, row) so terrain-char drawing can
+	# skip cells that an entity glyph is about to replace — otherwise the @
+	# can get lost underneath a "^" forest tile.
+	var entity_at := {}
+	for e in entities:
+		var k := Vector2i(int(e.get("col", 0)), int(e.get("row", 0)))
+		entity_at[k] = e
 
 	# Terrain cells
 	for r in rows:
@@ -77,6 +87,10 @@ func _draw() -> void:
 			var def = TERRAIN[id]
 			var cell_pos := Vector2(c * CELL_W, r * CELL_H)
 			draw_rect(Rect2(cell_pos, Vector2(CELL_W, CELL_H)), def["bg"])
+			# An entity occupies this cell — its glyph replaces the terrain
+			# char (we still keep the terrain bg so water/bridges read).
+			if entity_at.has(Vector2i(c, r)):
+				continue
 			if def["ch"] != " ":
 				draw_string(
 					_font,
@@ -88,8 +102,9 @@ func _draw() -> void:
 					def["fg"],
 				)
 
-	# Entities overlay
-	var entities = current_scene.get("entities", [])
+	# Entities overlay. Tint the cell with the entity's color at 55% alpha so
+	# the cell is obvious, then draw the glyph in white for maximum contrast
+	# against the tint (same-color glyph + tint blend to near-invisible).
 	for e in entities:
 		var kind: String = e.get("kind", "")
 		var row: int = int(e.get("row", 0))
@@ -97,14 +112,17 @@ func _draw() -> void:
 		var fallback_ch: String = e.get("char", "?")
 		var info = ENTITY.get(kind, {"ch": fallback_ch, "color": Color.WHITE})
 		var cell_pos := Vector2(col * CELL_W, row * CELL_H)
+		var tint: Color = info["color"]
+		tint.a = 0.55
+		draw_rect(Rect2(cell_pos, Vector2(CELL_W, CELL_H)), tint)
 		draw_string(
 			_font,
-			cell_pos + Vector2(3, CELL_H - 5),
+			cell_pos + Vector2(3, CELL_H - 4),
 			info["ch"],
 			HORIZONTAL_ALIGNMENT_LEFT,
 			-1,
-			FONT_PX,
-			info["color"],
+			ENTITY_FONT_PX,
+			Color.WHITE,
 		)
 
 	# HUD renders below the grid in a 3-column layout:

@@ -24,10 +24,9 @@ const PALETTE := {
 @onready var pass_input: LineEdit = $LoginPanel/VBox/PassRow/PassInput
 @onready var connect_button: Button = $LoginPanel/VBox/ConnectButton
 @onready var status_label: Label = $LoginPanel/VBox/StatusLabel
-@onready var terminal_center: HBoxContainer = $GamePanel/MainSplit/TerminalPanel/TerminalMargin/TerminalCenter
-@onready var terminal_text: RichTextLabel = $GamePanel/MainSplit/TerminalPanel/TerminalMargin/TerminalCenter/TerminalText
-@onready var scene_panel: Control = $GamePanel/MainSplit/ScenePanel
-@onready var scene_view: Control = $GamePanel/MainSplit/ScenePanel/SceneView
+@onready var terminal_text: RichTextLabel = $GamePanel/TerminalPanel/TerminalMargin/TerminalCenter/TerminalText
+@onready var scene_panel: Control = $GamePanel/ScenePanel
+@onready var scene_view: Control = $GamePanel/ScenePanel/SceneCenter/SceneView
 @onready var prompt_label: Label = $GamePanel/PromptRow/PromptLabel
 @onready var prompt_input: LineEdit = $GamePanel/PromptRow/PromptInput
 
@@ -165,6 +164,11 @@ func _on_output(msg: Dictionary) -> void:
 	var ansi: String = msg.get("ansi", "")
 	if ansi == "2J":
 		terminal_text.clear()
+		# ClearScreen is the server's transition signal. Drop any grid-combat
+		# scene — a subsequent Scene message re-shows the panel if the target
+		# state is scene-based.
+		if scene_panel.visible:
+			scene_panel.visible = false
 		return
 	if ansi != "":
 		# Unexpected post-refactor; log for visibility but don't crash.
@@ -207,16 +211,10 @@ func _on_scene(msg: Dictionary) -> void:
 	var scene = msg.get("scene", {})
 	if typeof(scene) != TYPE_DICTIONARY:
 		return
-	# Scene panel is hidden until the first scene arrives so the terminal
-	# gets full width for menus. Once shown, leave it visible — flipping it
-	# back off on every text-mode state would be visually noisy.
-	if not scene_panel.visible:
-		scene_panel.visible = true
-		# With the scene panel eating ~half the viewport, the terminal panel
-		# becomes narrower than the 820-logical content width. Switch the
-		# content HBox to BEGIN alignment so the LEFT (readable) edge stays
-		# anchored instead of both sides clipping under centered layout.
-		terminal_center.alignment = BoxContainer.ALIGNMENT_BEGIN
+	# Scene panel appears whenever a Scene message arrives, and the next
+	# ClearScreen from the server hides it again (see _on_output). Terminal
+	# stays full-width below the scene, so no size-flag gymnastics needed.
+	scene_panel.visible = true
 	scene_view.set("current_scene", scene)
 	if scene_view.has_method("refresh"):
 		scene_view.refresh()

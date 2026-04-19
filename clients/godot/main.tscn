@@ -86,48 +86,49 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MainSplit" type="HSplitContainer" parent="GamePanel"]
+[node name="ScenePanel" type="PanelContainer" parent="GamePanel"]
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(0, 400)
+
+[node name="SceneCenter" type="CenterContainer" parent="GamePanel/ScenePanel"]
+layout_mode = 2
+
+[node name="SceneView" type="Control" parent="GamePanel/ScenePanel/SceneCenter"]
+layout_mode = 2
+custom_minimum_size = Vector2(672, 360)
+script = ExtResource("2_sceneview")
+
+[node name="TerminalPanel" type="PanelContainer" parent="GamePanel"]
 layout_mode = 2
 size_flags_vertical = 3
-split_offset = 0
 
-[node name="TerminalPanel" type="PanelContainer" parent="GamePanel/MainSplit"]
+[node name="TerminalMargin" type="MarginContainer" parent="GamePanel/TerminalPanel"]
 layout_mode = 2
-custom_minimum_size = Vector2(850, 0)
-
-[node name="TerminalMargin" type="MarginContainer" parent="GamePanel/MainSplit/TerminalPanel"]
-layout_mode = 2
-theme_override_constants/margin_top = 60
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_top = 40
 theme_override_constants/margin_bottom = 20
 
-[node name="TerminalCenter" type="HBoxContainer" parent="GamePanel/MainSplit/TerminalPanel/TerminalMargin"]
+[node name="TerminalCenter" type="HBoxContainer" parent="GamePanel/TerminalPanel/TerminalMargin"]
 layout_mode = 2
 alignment = 1
 
-[node name="TerminalText" type="RichTextLabel" parent="GamePanel/MainSplit/TerminalPanel/TerminalMargin/TerminalCenter"]
+[node name="TerminalText" type="RichTextLabel" parent="GamePanel/TerminalPanel/TerminalMargin/TerminalCenter"]
 layout_mode = 2
-custom_minimum_size = Vector2(820, 0)
+custom_minimum_size = Vector2(720, 0)
+size_flags_horizontal = 4
 size_flags_vertical = 3
 bbcode_enabled = true
 scroll_active = true
 scroll_following = true
 selection_enabled = true
 
-[node name="ScenePanel" type="PanelContainer" parent="GamePanel/MainSplit"]
-visible = false
-layout_mode = 2
-custom_minimum_size = Vector2(700, 0)
-
-[node name="SceneView" type="Control" parent="GamePanel/MainSplit/ScenePanel"]
-layout_mode = 2
-script = ExtResource("2_sceneview")
-
 [node name="PromptRow" type="HBoxContainer" parent="GamePanel"]
 layout_mode = 2
 
 [node name="PromptLabel" type="Label" parent="GamePanel/PromptRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(200, 0)
 text = "› "
 
 [node name="PromptInput" type="LineEdit" parent="GamePanel/PromptRow"]
