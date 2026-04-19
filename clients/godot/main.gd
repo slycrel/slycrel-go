@@ -49,6 +49,15 @@ func _ready() -> void:
 	set_process(true)
 	user_input.grab_focus()
 
+	# Monospace font for the terminal so .ans column alignment works and the
+	# 80-col opening art doesn't wrap arbitrarily.
+	var mono := SystemFont.new()
+	mono.font_names = PackedStringArray(["Menlo", "Monaco", "SF Mono", "Consolas", "Courier New"])
+	terminal_text.add_theme_font_override("normal_font", mono)
+	terminal_text.add_theme_font_override("bold_font", mono)
+	terminal_text.add_theme_font_override("italics_font", mono)
+	terminal_text.add_theme_font_override("mono_font", mono)
+
 func _process(_delta: float) -> void:
 	ws.poll()
 	var state := ws.get_ready_state()
@@ -160,23 +169,19 @@ func _on_output(msg: Dictionary) -> void:
 		terminal_text.add_text("\n")
 
 func _on_ansi_art(msg: Dictionary) -> void:
-	# .ans files still ship as base64-encoded escape-sequence text.
-	# TODO(Phase 2 polish): parse the SGR+cursor subset into BBCode.
-	# For now, strip escape codes to plain text so menus are at least readable.
+	# .ans files ship as base64-encoded text with literal "\e[..." escape
+	# sequences. Convert the SGR + cursor-forward subset into BBCode so
+	# colors + column alignment render in the monospace terminal panel.
 	var b64: String = msg.get("ansi_art_data", "")
 	if b64 == "":
 		return
 	var bytes := Marshalls.base64_to_raw(b64)
 	var content := bytes.get_string_from_utf8()
-	# Files typically start with "\e[2J\e[H" to blank the screen before
-	# painting. Honor that so each menu replaces the previous view, matching
-	# terminal behavior.
-	if content.find("\\e[2J") != -1:
+	var result := _ansi_to_bbcode(content)
+	if result["cleared"]:
 		terminal_text.clear()
-	var cleaned := _strip_ansi_literals(content)
-	terminal_text.add_text(cleaned)
-	# End with a newline so subsequent Outln text doesn't jam against the art.
-	if not cleaned.ends_with("\n"):
+	terminal_text.append_text(result["bbcode"])
+	if not (result["bbcode"] as String).ends_with("\n"):
 		terminal_text.add_text("\n")
 
 func _on_scene(msg: Dictionary) -> void:
@@ -286,25 +291,101 @@ func _allowed_match(ch: String, allowed: String) -> bool:
 	# The server's allowed string is case-insensitive-ish; compare uppercased.
 	return allowed.to_upper().find(ch.to_upper()) != -1
 
-func _strip_ansi_literals(s: String) -> String:
-	# .ans files encode escape sequences as literal "\e[...letter".
-	# Strip them so the raw text is at least readable until we render them properly.
+# ──────────────────────────────────────────────────────────────────────────
+# ANSI → BBCode converter for .ans menu files
+# ──────────────────────────────────────────────────────────────────────────
+
+# Standard xterm-ish palette for the SGR 30-37 / 1+30-37 range.
+const ANSI_FG_NORMAL := {
+	"30": "#2a2a2a", "31": "#b04040", "32": "#40a040", "33": "#a07030",
+	"34": "#4060b0", "35": "#a040a0", "36": "#40a0a0", "37": "#b0b0b0",
+}
+const ANSI_FG_BOLD := {
+	"30": "#606060", "31": "#ff6060", "32": "#60ff60", "33": "#ffd060",
+	"34": "#6090ff", "35": "#ff60ff", "36": "#60ffff", "37": "#ffffff",
+}
+
+# Returns {"bbcode": String, "cleared": bool}.
+# cleared=true if the content contained a \e[2J clear-screen command (caller
+# should clear the terminal buffer before appending bbcode).
+func _ansi_to_bbcode(s: String) -> Dictionary:
 	var out := ""
+	var cleared := false
+	var color_open := false
 	var i := 0
 	while i < s.length():
+		# Literal "\e[...<letter>" escape sequence?
 		if i + 1 < s.length() and s[i] == "\\" and s[i + 1] == "e":
-			# Skip "\e["
-			i += 2
-			if i < s.length() and s[i] == "[":
-				i += 1
-			# Consume until a letter terminator.
-			while i < s.length():
-				var c := s[i]
-				i += 1
-				# Escape terminators are A-Z or a-z.
+			var j := i + 2
+			if j < s.length() and s[j] == "[":
+				j += 1
+			var params := ""
+			var term := ""
+			while j < s.length():
+				var c: String = s[j]
 				if (c >= "A" and c <= "Z") or (c >= "a" and c <= "z"):
+					term = c
+					j += 1
 					break
+				params += c
+				j += 1
+			match term:
+				"m":
+					# SGR: close any open color span, then open a new one
+					# (or leave closed for reset).
+					if color_open:
+						out += "[/color]"
+						color_open = false
+					var hex := _sgr_to_hex(params)
+					if hex != "":
+						out += "[color=" + hex + "]"
+						color_open = true
+				"C":
+					# Cursor forward N columns → emit N spaces (works under
+					# monospace, which is what the terminal panel uses).
+					var n: int = int(params) if params != "" else 1
+					for k in n:
+						out += " "
+				"J":
+					if params == "2":
+						cleared = true
+						out = ""
+						if color_open:
+							color_open = false  # caller-side clear resets state
+				# "H", "f" absolute positioning intentionally dropped — rare in
+				# our menus and would require a full terminal emulator.
+			i = j
 			continue
-		out += s[i]
+		# Ordinary character. Escape BBCode brackets so "[E]nter" doesn't
+		# become an unknown tag.
+		var ch: String = s[i]
+		if ch == "[":
+			out += "[lb]"
+		elif ch == "]":
+			out += "[rb]"
+		else:
+			out += ch
 		i += 1
-	return out
+	if color_open:
+		out += "[/color]"
+	return {"bbcode": out, "cleared": cleared}
+
+func _sgr_to_hex(params: String) -> String:
+	if params == "" or params == "0":
+		return ""
+	var parts := params.split(";")
+	var bold := false
+	var fg := ""
+	for p in parts:
+		var n: int = int(p)
+		if n == 0:
+			bold = false
+			fg = ""
+		elif n == 1:
+			bold = true
+		elif n >= 30 and n <= 37:
+			fg = str(n)
+	if fg == "":
+		return ""
+	var table = ANSI_FG_BOLD if bold else ANSI_FG_NORMAL
+	return table.get(fg, "")
