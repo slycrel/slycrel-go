@@ -50,13 +50,18 @@ func _ready() -> void:
 	user_input.grab_focus()
 
 	# Monospace font for the terminal so .ans column alignment works and the
-	# 80-col opening art doesn't wrap arbitrarily.
+	# 80-col opening art doesn't wrap arbitrarily. The font size is tuned so
+	# a standard 80-char line fits in ~780 logical pixels (the terminal panel
+	# width) — roughly 9px per char.
 	var mono := SystemFont.new()
 	mono.font_names = PackedStringArray(["Menlo", "Monaco", "SF Mono", "Consolas", "Courier New"])
 	terminal_text.add_theme_font_override("normal_font", mono)
 	terminal_text.add_theme_font_override("bold_font", mono)
 	terminal_text.add_theme_font_override("italics_font", mono)
 	terminal_text.add_theme_font_override("mono_font", mono)
+	terminal_text.add_theme_font_size_override("normal_font_size", 14)
+	terminal_text.add_theme_font_size_override("bold_font_size", 14)
+	terminal_text.add_theme_font_size_override("mono_font_size", 14)
 
 func _process(_delta: float) -> void:
 	ws.poll()

@@ -93,7 +93,7 @@ split_offset = 0
 
 [node name="TerminalPanel" type="PanelContainer" parent="GamePanel/MainSplit"]
 layout_mode = 2
-custom_minimum_size = Vector2(320, 0)
+custom_minimum_size = Vector2(780, 0)
 
 [node name="TerminalScroll" type="ScrollContainer" parent="GamePanel/MainSplit/TerminalPanel"]
 layout_mode = 2
