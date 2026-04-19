@@ -53,12 +53,21 @@ func (EnterSlycrelState) ID() game.StateID { return "enter_slycrel" }
 func (EnterSlycrelState) Enter(s *game.Session) {
 	s.IO.Outln("-=---  "+s.Username+" Entered the realm of Slycrel.", true, 1)
 
-	// Try to load existing character
+	// Try to load existing character. Treat "exists but uninitialized"
+	// (Name empty or MaxHP 0) the same as "doesn't exist" — this covers
+	// placeholder characters seeded by cmd/server --allow-new-users, whose
+	// stats haven't been rolled yet. Skipping creation for a placeholder
+	// would send the player into combat with HP=0 → instant death.
 	char, err := s.Store.FindCharacterByBBSName(s.Username)
-	if err != nil {
-		// New player - need to create character
+	needsCreation := err != nil || char == nil || char.Name == "" || char.MaxHP == 0
+	if needsCreation {
 		s.IO.Cr()
 		s.IO.Outln("No character found. Creating a new one...", true, 3)
+		// Keep the placeholder (if any) in the session so CreateCharacter
+		// can preserve PasswordHash / BBSName when rolling fresh stats.
+		if char != nil {
+			s.Character = char
+		}
 		s.SetNextState("create_character")
 		return
 	}

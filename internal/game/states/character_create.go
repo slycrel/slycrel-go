@@ -16,13 +16,21 @@ type CreateCharacterState struct{}
 func (CreateCharacterState) ID() game.StateID { return "create_character" }
 
 func (CreateCharacterState) Enter(s *game.Session) {
-	// Initialize a blank character
+	// Preserve the password hash from any placeholder character (auth
+	// seeded via --allow-new-users) so the saved new character stays
+	// loggable after creation. SaveCharacter does in-place overwrite.
+	existingHash := ""
+	if s.Character != nil {
+		existingHash = s.Character.PasswordHash
+	}
+
 	char := &model.Character{
-		BBSName:  s.Username,
-		Name:     s.Username,
-		Alive:    true,
-		Gender:   true, // male default
-		Location: model.TheTown,
+		BBSName:      s.Username,
+		Name:         s.Username,
+		Alive:        true,
+		Gender:       true, // male default
+		Location:     model.TheTown,
+		PasswordHash: existingHash,
 	}
 	s.Character = char
 
