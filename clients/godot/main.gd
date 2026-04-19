@@ -63,6 +63,10 @@ func _ready() -> void:
 	terminal_text.add_theme_font_size_override("normal_font_size", 14)
 	terminal_text.add_theme_font_size_override("bold_font_size", 14)
 	terminal_text.add_theme_font_size_override("mono_font_size", 14)
+	# Tighten line height so vertically stacked block chars (█▄▀) touch
+	# like they did on a DOS/VGA terminal instead of showing horizontal
+	# gaps between lines of the logo.
+	terminal_text.add_theme_constant_override("line_separation", -4)
 
 func _process(_delta: float) -> void:
 	ws.poll()
@@ -306,14 +310,18 @@ func _allowed_match(ch: String, allowed: String) -> bool:
 # ANSI → BBCode converter for .ans menu files
 # ──────────────────────────────────────────────────────────────────────────
 
-# Standard xterm-ish palette for the SGR 30-37 / 1+30-37 range.
+# DOS/VGA palette for SGR 30-37 (fg) and 40-47 (bg).
 const ANSI_FG_NORMAL := {
-	"30": "#2a2a2a", "31": "#b04040", "32": "#40a040", "33": "#a07030",
-	"34": "#4060b0", "35": "#a040a0", "36": "#40a0a0", "37": "#b0b0b0",
+	"30": "#000000", "31": "#aa0000", "32": "#00aa00", "33": "#aa5500",
+	"34": "#0000aa", "35": "#aa00aa", "36": "#00aaaa", "37": "#aaaaaa",
 }
 const ANSI_FG_BOLD := {
-	"30": "#606060", "31": "#ff6060", "32": "#60ff60", "33": "#ffd060",
-	"34": "#6090ff", "35": "#ff60ff", "36": "#60ffff", "37": "#ffffff",
+	"30": "#555555", "31": "#ff5555", "32": "#55ff55", "33": "#ffff55",
+	"34": "#5555ff", "35": "#ff55ff", "36": "#55ffff", "37": "#ffffff",
+}
+const ANSI_BG := {
+	"40": "#000000", "41": "#aa0000", "42": "#00aa00", "43": "#aa5500",
+	"44": "#0000aa", "45": "#aa00aa", "46": "#00aaaa", "47": "#aaaaaa",
 }
 
 # Returns {"bbcode": String, "cleared": bool}.
@@ -322,7 +330,11 @@ const ANSI_FG_BOLD := {
 func _ansi_to_bbcode(s: String) -> Dictionary:
 	var out := ""
 	var cleared := false
-	var color_open := false
+	var fg_hex := ""
+	var bg_hex := ""
+	var bold := false
+	var fg_open := false
+	var bg_open := false
 	var i := 0
 	while i < s.length():
 		# Literal "\e[...<letter>" escape sequence?
@@ -342,15 +354,41 @@ func _ansi_to_bbcode(s: String) -> Dictionary:
 				j += 1
 			match term:
 				"m":
-					# SGR: close any open color span, then open a new one
-					# (or leave closed for reset).
-					if color_open:
+					# SGR. Close currently-open spans, apply params to update
+					# state, then reopen spans for the new state. Parse params
+					# left-to-right so e.g. "0;1;30" = reset → bold → fg black
+					# correctly produces the bright-black (grey) tone.
+					if bg_open:
+						out += "[/bgcolor]"
+						bg_open = false
+					if fg_open:
 						out += "[/color]"
-						color_open = false
-					var hex := _sgr_to_hex(params)
-					if hex != "":
-						out += "[color=" + hex + "]"
-						color_open = true
+						fg_open = false
+					var parts: PackedStringArray
+					if params == "":
+						parts = PackedStringArray(["0"])
+					else:
+						parts = params.split(";")
+					for p in parts:
+						var n: int = int(p)
+						if n == 0:
+							fg_hex = ""; bg_hex = ""; bold = false
+						elif n == 1:
+							bold = true
+							# Re-resolve current fg with bold flag if it's set
+							# from an earlier param in the same sequence.
+							if fg_hex != "":
+								fg_hex = _lookup_fg(_reverse_fg(fg_hex), true)
+						elif n >= 30 and n <= 37:
+							fg_hex = _lookup_fg(str(n), bold)
+						elif n >= 40 and n <= 47:
+							bg_hex = ANSI_BG.get(str(n), "")
+					if fg_hex != "":
+						out += "[color=" + fg_hex + "]"
+						fg_open = true
+					if bg_hex != "":
+						out += "[bgcolor=" + bg_hex + "]"
+						bg_open = true
 				"C":
 					# Cursor forward N columns → emit N spaces (works under
 					# monospace, which is what the terminal panel uses).
@@ -361,8 +399,8 @@ func _ansi_to_bbcode(s: String) -> Dictionary:
 					if params == "2":
 						cleared = true
 						out = ""
-						if color_open:
-							color_open = false  # caller-side clear resets state
+						fg_hex = ""; bg_hex = ""; bold = false
+						fg_open = false; bg_open = false
 				# "H", "f" absolute positioning intentionally dropped — rare in
 				# our menus and would require a full terminal emulator.
 			i = j
@@ -377,26 +415,24 @@ func _ansi_to_bbcode(s: String) -> Dictionary:
 		else:
 			out += ch
 		i += 1
-	if color_open:
+	if bg_open:
+		out += "[/bgcolor]"
+	if fg_open:
 		out += "[/color]"
 	return {"bbcode": out, "cleared": cleared}
 
-func _sgr_to_hex(params: String) -> String:
-	if params == "" or params == "0":
-		return ""
-	var parts := params.split(";")
-	var bold := false
-	var fg := ""
-	for p in parts:
-		var n: int = int(p)
-		if n == 0:
-			bold = false
-			fg = ""
-		elif n == 1:
-			bold = true
-		elif n >= 30 and n <= 37:
-			fg = str(n)
-	if fg == "":
-		return ""
+func _lookup_fg(code: String, bold: bool) -> String:
 	var table = ANSI_FG_BOLD if bold else ANSI_FG_NORMAL
-	return table.get(fg, "")
+	return table.get(code, "")
+
+# Given a hex we previously emitted, figure out which SGR code it came from
+# so we can re-resolve with a new bold flag. Small palette so a linear scan
+# through both tables is fine.
+func _reverse_fg(hex: String) -> String:
+	for code in ANSI_FG_NORMAL:
+		if ANSI_FG_NORMAL[code] == hex:
+			return code
+	for code in ANSI_FG_BOLD:
+		if ANSI_FG_BOLD[code] == hex:
+			return code
+	return ""
