@@ -1,0 +1,127 @@
+[gd_scene load_steps=3 format=3 uid="uid://slycrel_main"]
+
+[ext_resource type="Script" path="res://main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scene_view.gd" id="2_sceneview"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main")
+
+[node name="LoginPanel" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="LoginPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="LoginPanel/VBox"]
+layout_mode = 2
+text = "Slycrel"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 32
+
+[node name="ServerRow" type="HBoxContainer" parent="LoginPanel/VBox"]
+layout_mode = 2
+
+[node name="ServerLabel" type="Label" parent="LoginPanel/VBox/ServerRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+text = "Server:"
+
+[node name="ServerInput" type="LineEdit" parent="LoginPanel/VBox/ServerRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(250, 0)
+text = "ws://localhost:8080/ws"
+
+[node name="UserRow" type="HBoxContainer" parent="LoginPanel/VBox"]
+layout_mode = 2
+
+[node name="UserLabel" type="Label" parent="LoginPanel/VBox/UserRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+text = "Username:"
+
+[node name="UserInput" type="LineEdit" parent="LoginPanel/VBox/UserRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(250, 0)
+
+[node name="PassRow" type="HBoxContainer" parent="LoginPanel/VBox"]
+layout_mode = 2
+
+[node name="PassLabel" type="Label" parent="LoginPanel/VBox/PassRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+text = "Password:"
+
+[node name="PassInput" type="LineEdit" parent="LoginPanel/VBox/PassRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(250, 0)
+secret = true
+
+[node name="ConnectButton" type="Button" parent="LoginPanel/VBox"]
+layout_mode = 2
+text = "Connect"
+
+[node name="StatusLabel" type="Label" parent="LoginPanel/VBox"]
+layout_mode = 2
+horizontal_alignment = 1
+text = " "
+
+[node name="GamePanel" type="VBoxContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainSplit" type="HSplitContainer" parent="GamePanel"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 640
+
+[node name="TerminalPanel" type="PanelContainer" parent="GamePanel/MainSplit"]
+layout_mode = 2
+
+[node name="TerminalScroll" type="ScrollContainer" parent="GamePanel/MainSplit/TerminalPanel"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="TerminalText" type="RichTextLabel" parent="GamePanel/MainSplit/TerminalPanel/TerminalScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_following = true
+selection_enabled = true
+
+[node name="ScenePanel" type="PanelContainer" parent="GamePanel/MainSplit"]
+layout_mode = 2
+
+[node name="SceneView" type="Control" parent="GamePanel/MainSplit/ScenePanel"]
+layout_mode = 2
+script = ExtResource("2_sceneview")
+
+[node name="PromptRow" type="HBoxContainer" parent="GamePanel"]
+layout_mode = 2
+
+[node name="PromptLabel" type="Label" parent="GamePanel/PromptRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 0)
+text = "› "
+
+[node name="PromptInput" type="LineEdit" parent="GamePanel/PromptRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "(waiting for server)"

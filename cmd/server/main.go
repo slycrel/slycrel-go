@@ -16,6 +16,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -23,8 +24,9 @@ import (
 	"os"
 
 	"github.com/slycrel/slycrel/internal/game"
-	slyio "github.com/slycrel/slycrel/internal/io"
 	"github.com/slycrel/slycrel/internal/game/states"
+	slyio "github.com/slycrel/slycrel/internal/io"
+	"github.com/slycrel/slycrel/internal/model"
 	"github.com/slycrel/slycrel/internal/store"
 )
 
@@ -32,6 +34,7 @@ func main() {
 	port := flag.Int("port", 8080, "TCP port to listen on")
 	dataDir := flag.String("data-dir", "./data", "game asset directory (monsters, weapons, ansi)")
 	stateDir := flag.String("state-dir", "./state", "writable state directory (characters, inn, etc.)")
+	allowNewUsers := flag.Bool("allow-new-users", false, "auto-register unknown usernames at handshake (dev only — connecting user's first password becomes their account password)")
 	_ = flag.Bool("headless", true, "run as a headless server (browser/WebSocket clients only; no local terminal I/O) — this is the default and only mode for cmd/server")
 	flag.Parse()
 
@@ -48,7 +51,28 @@ func main() {
 	engine.RegisterStates = states.RegisterAll
 
 	auth := func(username, password string) error {
-		return st.AuthenticatePlayer(username, password)
+		err := st.AuthenticatePlayer(username, password)
+		if err == nil {
+			return nil
+		}
+		if !*allowNewUsers {
+			return err
+		}
+		// Dev-mode auto-registration: if the user doesn't exist yet, create a
+		// blank character with BBSName + password. The in-game state machine
+		// routes them through create_character on first login, which fills in
+		// Name / class / stats.
+		if _, findErr := st.FindCharacterByBBSName(username); findErr != nil && errors.Is(findErr, store.ErrNotFound) {
+			if err := st.AddCharacter(&model.Character{BBSName: username}); err != nil {
+				return err
+			}
+			if err := st.SetPlayerPassword(username, password); err != nil {
+				return err
+			}
+			log.Printf("auto-registered new user %q (dev mode)", username)
+			return nil
+		}
+		return err
 	}
 
 	wsHandler := slyio.WSUpgrader(*dataDir, auth, func(sess *slyio.WSSession, username string) {
