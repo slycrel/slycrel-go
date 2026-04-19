@@ -93,7 +93,7 @@ split_offset = 0
 
 [node name="TerminalPanel" type="PanelContainer" parent="GamePanel/MainSplit"]
 layout_mode = 2
-custom_minimum_size = Vector2(720, 0)
+custom_minimum_size = Vector2(780, 0)
 
 [node name="TerminalMargin" type="MarginContainer" parent="GamePanel/MainSplit/TerminalPanel"]
 layout_mode = 2
@@ -106,18 +106,17 @@ alignment = 1
 
 [node name="TerminalText" type="RichTextLabel" parent="GamePanel/MainSplit/TerminalPanel/TerminalMargin/TerminalCenter"]
 layout_mode = 2
-custom_minimum_size = Vector2(720, 0)
+custom_minimum_size = Vector2(750, 0)
 size_flags_vertical = 3
 bbcode_enabled = true
 scroll_active = true
 scroll_following = true
 selection_enabled = true
-texture_filter = 1
 
 [node name="ScenePanel" type="PanelContainer" parent="GamePanel/MainSplit"]
 visible = false
 layout_mode = 2
-custom_minimum_size = Vector2(220, 0)
+custom_minimum_size = Vector2(700, 0)
 
 [node name="SceneView" type="Control" parent="GamePanel/MainSplit/ScenePanel"]
 layout_mode = 2
