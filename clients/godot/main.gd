@@ -25,6 +25,7 @@ const PALETTE := {
 @onready var connect_button: Button = $LoginPanel/VBox/ConnectButton
 @onready var status_label: Label = $LoginPanel/VBox/StatusLabel
 @onready var terminal_text: RichTextLabel = $GamePanel/MainSplit/TerminalPanel/TerminalScroll/TerminalText
+@onready var scene_panel: Control = $GamePanel/MainSplit/ScenePanel
 @onready var scene_view: Control = $GamePanel/MainSplit/ScenePanel/SceneView
 @onready var prompt_label: Label = $GamePanel/PromptRow/PromptLabel
 @onready var prompt_input: LineEdit = $GamePanel/PromptRow/PromptInput
@@ -193,6 +194,11 @@ func _on_scene(msg: Dictionary) -> void:
 	var scene = msg.get("scene", {})
 	if typeof(scene) != TYPE_DICTIONARY:
 		return
+	# Scene panel is hidden until the first scene arrives so the terminal
+	# gets full width for menus. Once shown, leave it visible — flipping it
+	# back off on every text-mode state would be visually noisy.
+	if not scene_panel.visible:
+		scene_panel.visible = true
 	scene_view.set("current_scene", scene)
 	if scene_view.has_method("refresh"):
 		scene_view.refresh()

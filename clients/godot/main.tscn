@@ -108,6 +108,7 @@ scroll_following = true
 selection_enabled = true
 
 [node name="ScenePanel" type="PanelContainer" parent="GamePanel/MainSplit"]
+visible = false
 layout_mode = 2
 custom_minimum_size = Vector2(700, 0)
 
