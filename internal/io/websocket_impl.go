@@ -330,7 +330,7 @@ type Authenticator func(username, password string) error
 //	    — or —
 //	Server → Client : { type:"error", v:1, err:"..." }        (auth fail / version mismatch)
 func WSUpgrader(dataDir string, auth Authenticator, handler func(sess *WSSession, username string)) http.Handler {
-	return websocket.Handler(func(conn *websocket.Conn) {
+	handle := websocket.Handler(func(conn *websocket.Conn) {
 		// Expect MsgTypeHello as the first message. Enforce a tight deadline so
 		// slow/invalid clients don't hold a goroutine open indefinitely.
 		conn.SetDeadline(time.Now().Add(30 * time.Second))
@@ -372,4 +372,13 @@ func WSUpgrader(dataDir string, auth Authenticator, handler func(sess *WSSession
 		sess := NewWSSession(conn, dataDir)
 		handler(sess, hello.Username)
 	})
+
+	// Wrap in a Server with a permissive Handshake — the default Handler
+	// enforces an Origin-header check that Godot's WebSocketPeer and other
+	// non-browser clients don't send. Authentication still happens via the
+	// hello-message flow above.
+	return websocket.Server{
+		Handler:   handle,
+		Handshake: func(_ *websocket.Config, _ *http.Request) error { return nil },
+	}
 }
