@@ -162,15 +162,22 @@ func _on_output(msg: Dictionary) -> void:
 func _on_ansi_art(msg: Dictionary) -> void:
 	# .ans files still ship as base64-encoded escape-sequence text.
 	# TODO(Phase 2 polish): parse the SGR+cursor subset into BBCode.
-	# For now, drop raw content into the terminal so something appears.
+	# For now, strip escape codes to plain text so menus are at least readable.
 	var b64: String = msg.get("ansi_art_data", "")
 	if b64 == "":
 		return
 	var bytes := Marshalls.base64_to_raw(b64)
 	var content := bytes.get_string_from_utf8()
-	# Strip the literal "\e[...m" + cursor codes so menus are at least readable.
+	# Files typically start with "\e[2J\e[H" to blank the screen before
+	# painting. Honor that so each menu replaces the previous view, matching
+	# terminal behavior.
+	if content.find("\\e[2J") != -1:
+		terminal_text.clear()
 	var cleaned := _strip_ansi_literals(content)
 	terminal_text.add_text(cleaned)
+	# End with a newline so subsequent Outln text doesn't jam against the art.
+	if not cleaned.ends_with("\n"):
+		terminal_text.add_text("\n")
 
 func _on_scene(msg: Dictionary) -> void:
 	var scene = msg.get("scene", {})

@@ -297,14 +297,17 @@ func (s *WSSession) RenderScene(scene Scene) {
 }
 
 // ShowANSIFile reads an ANSI art file from dataDir and sends its contents to the client.
+// Mirrors LocalTerminal.ShowANSIFile: callers pass a bare name ("main_menu"), we append ".ans".
 func (s *WSSession) ShowANSIFile(name string) error {
 	if !s.IsConnected() {
 		return nil
 	}
-	path := filepath.Join(s.dataDir, "ansi", name)
+	path := filepath.Join(s.dataDir, "ansi", name+".ans")
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("ansi file %q: %w", name, err)
+		// File missing is not fatal to the session — match LocalTerminal's
+		// forgiving behavior so a missing asset doesn't drop the connection.
+		return nil
 	}
 	return s.send(ServerMsg{
 		Type:        MsgTypeANSIArt,
