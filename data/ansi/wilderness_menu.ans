@@ -1,8 +1,8 @@
 \e[2J\e[H                                                   
-  \e[1;34m---\e[37mThe\e[34m--\e[37mGreat\e[34m--\e[37mOutdoors\e[34m-------------------------
+  \e[1;34m───\e[37mThe\e[34m──\e[37mGreat\e[34m──\e[37mOutdoors\e[34m─────────────────────────
 
    \e[1;32m(\e[37mM\e[32m)ountains         \e[1;32m(\e[37mA\e[32m)gatha's healing
    \e[1;32m(\e[37mF\e[32m)orest            \e[1;32m(\e[37mQ\e[32m)uit to Town
    \e[1;32m(\e[37mS\e[32m)wamp             \e[1;32m(\e[37m?\e[32m)Display Menu
 
-  \e[1;34m------------------------------------
+  \e[1;34m────────────────────────────────────

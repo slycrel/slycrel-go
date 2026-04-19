@@ -1,9 +1,9 @@
 \e[2J\e[H                                                   
-  \e[1;36m---\e[0;37mAgatha's\e[1;36m--\e[0;37mHealing\e[1;36m--------------------
+  \e[1;36m───\e[0;37mAgatha's\e[1;36m──\e[0;37mHealing\e[1;36m────────────────────
 
    \e[0;34m(\e[0;37mH\e[0;34m)eal Wounds
    \e[0;34m(\e[0;37m?\e[0;34m)Display Menu
    \e[0;34m(\e[0;37mN\e[0;34m)umber of HP to heal
    \e[0;34m(\e[0;37mQ\e[0;34m)uit to Wilderness
 
-  \e[1;36m--------------------------------   
+  \e[1;36m────────────────────────────────   

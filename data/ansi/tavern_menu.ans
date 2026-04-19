@@ -4,7 +4,7 @@ of such splendor as yourself.  Unfortunately, the patrons of the tavern don't
 care for heroes much, as there are so many around here.  No one even looks twice
 at you...
 
-   \e[0;35m-----\e[31mLynx's\e[35m--\e[31mTavern\e[35m------------------------------
+   \e[0;35m─────\e[31mLynx's\e[35m──\e[31mTavern\e[35m──────────────────────────────
 
    \e[1;34m(\e[0;31mT\e[1;34m)alk to Barkeep
         \e[1;34m(\e[1;30mL\e[1;34m)isten to Rumors
@@ -14,5 +14,5 @@ at you...
    \e[1;34m(\e[0;31m?\e[1;34m)Display Menu
           \e[1;34m(\e[0;31mQ\e[1;34m)uit to Town
 
-   \e[0;35m-----------------------------------\e[37m
+   \e[0;35m───────────────────────────────────\e[37m
 \e[A
