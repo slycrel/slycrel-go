@@ -22,3 +22,4 @@ orig/**/.svn/
 
 # Claude Code internals
 .claude/
+state/

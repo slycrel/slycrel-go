@@ -50,25 +50,25 @@ func _ready() -> void:
 	set_process(true)
 	user_input.grab_focus()
 
-	# Monospace font for the terminal so .ans column alignment works and the
-	# 80-col opening art doesn't wrap arbitrarily. The font size is tuned so
-	# a standard 80-char line fits in ~780 logical pixels (the terminal panel
-	# width) — roughly 9px per char.
-	var mono := SystemFont.new()
-	mono.font_names = PackedStringArray(["Menlo", "Monaco", "SF Mono", "Consolas", "Courier New"])
-	terminal_text.add_theme_font_override("normal_font", mono)
-	terminal_text.add_theme_font_override("bold_font", mono)
-	terminal_text.add_theme_font_override("italics_font", mono)
-	terminal_text.add_theme_font_override("mono_font", mono)
-	terminal_text.add_theme_font_size_override("normal_font_size", 14)
-	terminal_text.add_theme_font_size_override("bold_font_size", 14)
-	terminal_text.add_theme_font_size_override("mono_font_size", 14)
-	# line_separation=0 — any negative value clipped descenders (y/g/p/q)
-	# in menu text because Menlo/Monaco's glyph cells include built-in
-	# leading that is not cell-tight like DOS VGA. Living with tiny gaps
-	# between stacked block glyphs in logo art. Fix path: bundle a
-	# cell-tight DOS/VGA font (e.g. Px437 IBM VGA 9x16) and revisit.
-	terminal_text.add_theme_constant_override("line_separation", 0)
+	# Monospace font for the terminal. VileR's Mx437 IBM VGA 9x16 is the
+	# authoritative reproduction of the classic DOS VGA text-mode font —
+	# cell-tight (no built-in leading), so stacked block glyphs (█▄▀) tile
+	# seamlessly and descenders (y/g/p/q) aren't clipped at line_separation=0.
+	# Sized at 16 to match the font's native 9x16 cell (80 cols = 720 logical
+	# px, fits the 750-px terminal width with a tiny margin).
+	var vga := load("res://fonts/Mx437_IBM_VGA_9x16.ttf") as Font
+	if vga == null:
+		# Fallback for environments where the font didn't ship.
+		var sysfont := SystemFont.new()
+		sysfont.font_names = PackedStringArray(["Menlo", "Monaco", "SF Mono", "Consolas", "Courier New"])
+		vga = sysfont
+	terminal_text.add_theme_font_override("normal_font", vga)
+	terminal_text.add_theme_font_override("bold_font", vga)
+	terminal_text.add_theme_font_override("italics_font", vga)
+	terminal_text.add_theme_font_override("mono_font", vga)
+	terminal_text.add_theme_font_size_override("normal_font_size", 16)
+	terminal_text.add_theme_font_size_override("bold_font_size", 16)
+	terminal_text.add_theme_font_size_override("mono_font_size", 16)
 
 func _process(_delta: float) -> void:
 	ws.poll()
