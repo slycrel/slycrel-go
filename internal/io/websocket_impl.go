@@ -284,6 +284,18 @@ func (s *WSSession) ReadLine(prompt string, maxLen int) string {
 	return strings.TrimSpace(val)
 }
 
+// RenderScene ships a structured grid scene to the client. Tilemap-aware
+// clients (Godot) render natively; no ANSI escape sequences are involved.
+func (s *WSSession) RenderScene(scene Scene) {
+	if !s.IsConnected() {
+		return
+	}
+	_ = s.send(ServerMsg{
+		Type:  MsgTypeScene,
+		Scene: &scene,
+	})
+}
+
 // ShowANSIFile reads an ANSI art file from dataDir and sends its contents to the client.
 func (s *WSSession) ShowANSIFile(name string) error {
 	if !s.IsConnected() {

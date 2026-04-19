@@ -11,6 +11,7 @@ const (
 	MsgTypeOutput  MsgType = "output"   // Outln / Cr / ANSICode / ClearScreen
 	MsgTypePrompt  MsgType = "prompt"   // LettersPrompt / NumbersPrompt / YesNoQuestion / PausePrompt / ReadLine
 	MsgTypeANSIArt MsgType = "ansi_art" // ShowANSIFile — raw ANSI bytes
+	MsgTypeScene   MsgType = "scene"    // RenderScene — structured terrain + entities + HUD
 
 	// Client → Server
 	MsgTypeInput MsgType = "input" // response to any prompt
@@ -57,6 +58,9 @@ type ServerMsg struct {
 	// ansi_art fields (MsgTypeANSIArt)
 	ANSIArtName string `json:"ansi_art_name,omitempty"`
 	ANSIArtData string `json:"ansi_art_data,omitempty"` // base64-encoded ANSI file contents
+
+	// scene fields (MsgTypeScene)
+	Scene *Scene `json:"scene,omitempty"`
 
 	// error fields (MsgTypeError)
 	ErrMsg string `json:"err,omitempty"`

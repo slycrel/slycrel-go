@@ -38,6 +38,11 @@ type IOProvider interface {
 	// ShowANSIFile displays an ANSI art file by name from the data/ansi directory.
 	ShowANSIFile(name string) error
 
+	// RenderScene draws a structured grid scene (terrain tiles + entity overlay + HUD).
+	// Terminal implementations render via ANSI; tilemap-aware clients render via their
+	// engine's native facilities.
+	RenderScene(scene Scene)
+
 	// IsConnected returns true if the user session is still active.
 	IsConnected() bool
 }

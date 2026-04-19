@@ -225,6 +225,146 @@ func (t *LocalTerminal) ShowANSIFile(name string) error {
 	return nil
 }
 
+// RenderScene draws a structured grid scene via ANSI, preserving the pre-port
+// layout. Keeps terminal play visually identical to the ANSI-everywhere
+// implementation that lived in combat_grid.go before the Scene refactor.
+func (t *LocalTerminal) RenderScene(scene Scene) {
+	if !t.connected {
+		return
+	}
+	fmt.Print(ClearScreenCode())
+
+	// Top border (row 1)
+	fmt.Printf("%s%s+%s+",
+		CursorTo(1, 1),
+		ESC+"1;37m",
+		strings.Repeat("-", scene.Cols),
+	)
+
+	// Terrain rows (rows 2 .. 2+Rows-1), bordered left/right
+	for r := 0; r < scene.Rows; r++ {
+		fmt.Printf("%s%s|", CursorTo(r+2, 1), ESC+"1;37m")
+		for c := 0; c < scene.Cols; c++ {
+			ch, color := terrainGlyph(scene.Terrain[r][c])
+			fmt.Printf("%s%s%s", ESC, color, ch)
+		}
+		fmt.Printf("%s|", ESC+"1;37m")
+	}
+
+	// Bottom border
+	fmt.Printf("%s%s+%s+",
+		CursorTo(scene.Rows+2, 1),
+		ESC+"1;37m",
+		strings.Repeat("-", scene.Cols),
+	)
+
+	// Entities overlay
+	for _, e := range scene.Entities {
+		color := "1;37m"
+		switch e.Kind {
+		case "player":
+			color = "1;34m" // blue
+		case "monster":
+			color = "1;31m" // red
+		}
+		fmt.Printf("%s%s%s%s",
+			CursorTo(e.Row+2, e.Col+2),
+			ESC, color, e.Char,
+		)
+	}
+
+	// HUD panel (right of the grid)
+	if scene.Kind == "grid_combat" {
+		col := scene.Cols + 4
+		h := scene.HUD
+		fmt.Printf("%s%s%s", CursorTo(2, col), ESC+"0;36m", h.CharName)
+		fmt.Printf("%s%s%s", CursorTo(3, col), ESC+"0;32m", fmt.Sprintf("HP: %d/%d", h.HP, h.MaxHP))
+		fmt.Printf("%s%s%s", CursorTo(4, col), ESC+"0;32m", fmt.Sprintf("Mv: %d", h.Movement))
+		fmt.Printf("%s%s%s", CursorTo(5, col), ESC+"0;32m", fmt.Sprintf("Ps: %d/%d", h.Psyche, h.MaxPsyche))
+
+		w1 := h.Weapon1
+		if w1 == "" {
+			w1 = "Hands"
+		}
+		fmt.Printf("%s%s%s", CursorTo(7, col), ESC+"0;35m", "W1: "+w1)
+
+		w2 := h.Weapon2
+		if w2 == "" {
+			w2 = "---"
+		}
+		fmt.Printf("%s%s%s", CursorTo(8, col), ESC+"0;35m", "W2: "+w2)
+
+		a1 := h.Armor
+		if a1 == "" {
+			a1 = "None"
+		}
+		fmt.Printf("%s%s%s", CursorTo(10, col), ESC+"0;35m", "Ar: "+a1)
+
+		if h.MonsterName != "" {
+			fmt.Printf("%s%s%s", CursorTo(12, col), ESC+"0;31m", h.MonsterName)
+			fmt.Printf("%s%s%s", CursorTo(13, col), ESC+"0;31m", fmt.Sprintf("HP: %d", h.MonsterHP))
+		}
+
+		// Text-area separator + status log (5 lines) + control hint
+		fmt.Printf("%s%s%s",
+			CursorTo(scene.Rows+3, 1),
+			ESC+"0;36m",
+			strings.Repeat("-", 50),
+		)
+		for i, msg := range h.Log {
+			if i >= 5 {
+				break
+			}
+			padded := msg
+			if len(padded) > 50 {
+				padded = padded[:50]
+			}
+			padded = fmt.Sprintf("%-50s", padded)
+			fmt.Printf("%s%s%s",
+				CursorTo(scene.Rows+4+i, 2),
+				ESC+"1;30;40m",
+				padded,
+			)
+		}
+		fmt.Printf("%s%s%s",
+			CursorTo(scene.Rows+9, 1),
+			ESC+"0;36m",
+			"[I/J/K/L]Move [A]ttack [F]ire [R]un [P]ass [*]Redraw",
+		)
+	}
+}
+
+// terrainGlyph returns the ANSI SGR code (without ESC[ prefix) and display
+// character for a terrain tile ID. Canonical palette — mirrors
+// mechanics.GetTerrainDisplay but lives here to avoid the io→mechanics
+// dependency.
+func terrainGlyph(id int) (char, ansiColor string) {
+	switch id {
+	case 0:
+		return " ", "0;37;40m" // empty / grass
+	case 1:
+		return "^", "0;32;40m" // forest
+	case 2:
+		return ".", "0;33;40m" // sand / road
+	case 3:
+		return "~", "0;34;44m" // water
+	case 4:
+		return "=", "0;33;43m" // bridge
+	case 5:
+		return "O", "1;30;40m" // boulder
+	case 6:
+		return "#", "1;32;40m" // deep forest
+	case 7:
+		return "+", "0;32;40m" // light forest
+	case 8:
+		return "%", "1;33;42m" // swamp
+	case 9:
+		return "&", "0;32;42m" // deep swamp
+	default:
+		return "?", "1;31;40m"
+	}
+}
+
 func (t *LocalTerminal) IsConnected() bool {
 	return t.connected
 }

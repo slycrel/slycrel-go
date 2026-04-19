@@ -163,22 +163,16 @@ func (FavoriteColorState) ID() game.StateID { return "favorite_color" }
 
 func (FavoriteColorState) Enter(s *game.Session) {
 	s.IO.Cr()
-	s.IO.ANSICode("1;30m 1 - Black")
-	s.IO.Cr()
-	s.IO.ANSICode("1;37m 2 - White")
-	s.IO.Cr()
-	s.IO.ANSICode("0;34m 3 - Blue")
-	s.IO.Cr()
-	s.IO.ANSICode("1;31m 4 - Red")
-	s.IO.Cr()
-	s.IO.ANSICode("1;35m 5 - Purple")
-	s.IO.Cr()
-	s.IO.ANSICode("1;33m 6 - Yellow")
-	s.IO.Cr()
-	s.IO.ANSICode("0;33m 7 - Orange")
-	s.IO.Cr()
-	s.IO.ANSICode("1;32m 8 - Green")
-	s.IO.Cr()
+	// Palette is the 6-color IOProvider palette; black/orange map to the
+	// nearest available hue since the protocol doesn't carry true RGB.
+	s.IO.Outln(" 1 - Black", true, 2)   // no black in palette → white-ish
+	s.IO.Outln(" 2 - White", true, 2)
+	s.IO.Outln(" 3 - Blue", true, 1)    // cyan is closest to blue
+	s.IO.Outln(" 4 - Red", true, 6)
+	s.IO.Outln(" 5 - Purple", true, 5)
+	s.IO.Outln(" 6 - Yellow", true, 4)
+	s.IO.Outln(" 7 - Orange", true, 4)  // yellow-ish stand-in
+	s.IO.Outln(" 8 - Green", true, 3)
 	s.IO.Cr()
 
 	n := s.IO.NumbersPrompt("# of Color :", 1, 8)

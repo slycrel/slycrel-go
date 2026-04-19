@@ -3,9 +3,9 @@ package states
 import (
 	"fmt"
 	"math"
-	"strings"
 
 	"github.com/slycrel/slycrel/internal/game"
+	slyio "github.com/slycrel/slycrel/internal/io"
 	"github.com/slycrel/slycrel/internal/mechanics"
 	"github.com/slycrel/slycrel/internal/model"
 )
@@ -49,7 +49,7 @@ func (GridCombatSetupState) Enter(s *game.Session) {
 	}
 
 	s.TextOutln = 0
-	drawGridScreen(s)
+	renderGridScene(s)
 	gridTextOut(s, fmt.Sprintf("You Encounter a %s", s.Monster.Name))
 
 	s.SetNextState("grid_combat_prompt")
@@ -80,8 +80,8 @@ func (GridCombatPromptState) Enter(s *game.Session) {
 		return
 	}
 
-	// Update movement display
-	updateMovementDisplay(s)
+	// Refresh display (HP, movement, positions)
+	renderGridScene(s)
 
 	choice := s.IO.LettersPrompt("", "AIJKLFRPS*", 1, true, false)
 
@@ -129,7 +129,7 @@ func (GridCombatPromptState) Enter(s *game.Session) {
 		s.SetNextState("grid_monster_move")
 		return
 	case "*": // redraw
-		drawGridScreen(s)
+		renderGridScene(s)
 	}
 
 	// Check collision - if player on monster, enter text combat
@@ -176,9 +176,6 @@ func (GridMonsterMoveState) Enter(s *game.Session) {
 				break
 			}
 
-			// Erase old monster position
-			drawTerrainCell(s, s.MonsR, s.MonsC)
-
 			s.MonsR = newR
 			s.MonsC = newC
 			moveLeft -= cost
@@ -194,8 +191,8 @@ func (GridMonsterMoveState) Enter(s *game.Session) {
 			}
 		}
 
-		// Draw monster at new position
-		drawMonsterOnGrid(s)
+		// Redraw scene at monster's new position
+		renderGridScene(s)
 	}
 
 	// Reset player movement for next turn
@@ -215,141 +212,57 @@ func (GridMonsterMoveState) Enter(s *game.Session) {
 }
 
 // --- Grid rendering helpers ---
+//
+// All rendering flows through renderGridScene: build a Scene from current
+// session state, hand it to the IOProvider. LocalTerminal renders ANSI as
+// before; WSSession ships structured data to tilemap clients (Godot).
+// Incremental "draw a single cell" updates are gone — we always re-render
+// the full scene, since 12×48 is tiny and one less code path to maintain.
 
-func drawGridScreen(s *game.Session) {
-	s.IO.ClearScreen()
-	terrain := s.Terrain
-
-	// Draw border top
-	s.IO.ANSICode("1;1H")
-	s.IO.ANSICode("1;37m+" + strings.Repeat("-", model.GridCols) + "+")
-
-	// Draw terrain grid
-	for r := 0; r < model.GridRows; r++ {
-		s.IO.ANSICode(fmt.Sprintf("%d;1H", r+2))
-		s.IO.ANSICode("1;37m|")
-		for c := 0; c < model.GridCols; c++ {
-			td := mechanics.GetTerrainDisplay(terrain.Cells[r][c])
-			s.IO.ANSICode(td.ANSIColor + td.Char)
-		}
-		s.IO.ANSICode("1;37m|")
+func renderGridScene(s *game.Session) {
+	if s.Terrain == nil {
+		return
 	}
-
-	// Draw border bottom
-	s.IO.ANSICode(fmt.Sprintf("%d;1H", model.GridRows+2))
-	s.IO.ANSICode("1;37m+" + strings.Repeat("-", model.GridCols) + "+")
-
-	// Draw player and monster
-	drawPlayerOnGrid(s)
-	drawMonsterOnGrid(s)
-
-	// Draw stats panel
-	drawGridStats(s)
-
-	// Draw text area separator
-	s.IO.ANSICode(fmt.Sprintf("%d;1H", model.GridRows+3))
-	s.IO.ANSICode("0;36m" + strings.Repeat("-", 50))
-
-	// Position cursor for input
-	s.IO.ANSICode(fmt.Sprintf("%d;1H", model.GridRows+9))
-	s.IO.ANSICode("0;36m[I/J/K/L]Move [A]ttack [F]ire [R]un [P]ass [*]Redraw")
-}
-
-func drawPlayerOnGrid(s *game.Session) {
-	s.IO.ANSICode(fmt.Sprintf("%d;%dH", s.UserR+2, s.UserC+2))
-	s.IO.ANSICode("1;34m@") // blue @
-}
-
-func drawMonsterOnGrid(s *game.Session) {
-	s.IO.ANSICode(fmt.Sprintf("%d;%dH", s.MonsR+2, s.MonsC+2))
-	s.IO.ANSICode("1;31mM") // red M
-}
-
-func drawTerrainCell(s *game.Session, r, c int) {
-	td := mechanics.GetTerrainDisplay(s.Terrain.Cells[r][c])
-	s.IO.ANSICode(fmt.Sprintf("%d;%dH", r+2, c+2))
-	s.IO.ANSICode(td.ANSIColor + td.Char)
-}
-
-func drawGridStats(s *game.Session) {
 	c := s.Character
-	col := model.GridCols + 4
-
-	s.IO.ANSICode(fmt.Sprintf("2;%dH", col))
-	s.IO.ANSICode(fmt.Sprintf("0;36m%s", c.Name))
-
-	s.IO.ANSICode(fmt.Sprintf("3;%dH", col))
-	s.IO.ANSICode(fmt.Sprintf("0;32mHP: %d/%d", c.HitPoints, c.MaxHP))
-
-	s.IO.ANSICode(fmt.Sprintf("4;%dH", col))
-	s.IO.ANSICode(fmt.Sprintf("0;32mMv: %d", c.Movement))
-
-	s.IO.ANSICode(fmt.Sprintf("5;%dH", col))
-	s.IO.ANSICode(fmt.Sprintf("0;32mPs: %d/%d", c.Psyche, c.MaxPsyche))
-
-	s.IO.ANSICode(fmt.Sprintf("7;%dH", col))
-	w1 := c.Weapons[0].Name
-	if w1 == "" {
-		w1 = "Hands"
+	hud := slyio.SceneHUD{
+		CharName:  c.Name,
+		HP:        c.HitPoints,
+		MaxHP:     c.MaxHP,
+		Movement:  c.Movement,
+		Psyche:    c.Psyche,
+		MaxPsyche: c.MaxPsyche,
+		Weapon1:   c.Weapons[0].Name,
+		Weapon2:   c.Weapons[1].Name,
+		Armor:     c.Armor[0].Name,
+		Log:       activeGridLog(s),
 	}
-	s.IO.ANSICode(fmt.Sprintf("0;35mW1: %s", w1))
-
-	s.IO.ANSICode(fmt.Sprintf("8;%dH", col))
-	w2 := c.Weapons[1].Name
-	if w2 == "" {
-		w2 = "---"
-	}
-	s.IO.ANSICode(fmt.Sprintf("0;35mW2: %s", w2))
-
-	s.IO.ANSICode(fmt.Sprintf("10;%dH", col))
-	a1 := c.Armor[0].Name
-	if a1 == "" {
-		a1 = "None"
-	}
-	s.IO.ANSICode(fmt.Sprintf("0;35mAr: %s", a1))
-
-	// Monster info
 	if s.Monster != nil {
-		s.IO.ANSICode(fmt.Sprintf("12;%dH", col))
-		s.IO.ANSICode(fmt.Sprintf("0;31m%s", s.Monster.Name))
-		s.IO.ANSICode(fmt.Sprintf("13;%dH", col))
-		s.IO.ANSICode(fmt.Sprintf("0;31mHP: %d", s.Monster.HitPoints))
+		hud.MonsterName = s.Monster.Name
+		hud.MonsterHP = s.Monster.HitPoints
 	}
+	scene := slyio.NewGridCombatScene(s.Terrain, s.UserR, s.UserC, s.MonsR, s.MonsC, hud)
+	s.IO.RenderScene(scene)
 }
 
-func updateMovementDisplay(s *game.Session) {
-	col := model.GridCols + 4
-	s.IO.ANSICode(fmt.Sprintf("4;%dH", col))
-	s.IO.ANSICode(fmt.Sprintf("0;32mMv: %-4d", s.Character.Movement))
-
-	// Update HP too
-	s.IO.ANSICode(fmt.Sprintf("3;%dH", col))
-	s.IO.ANSICode(fmt.Sprintf("0;32mHP: %d/%d  ", s.Character.HitPoints, s.Character.MaxHP))
-
-	// Update monster HP
-	if s.Monster != nil {
-		s.IO.ANSICode(fmt.Sprintf("13;%dH", col))
-		s.IO.ANSICode(fmt.Sprintf("0;31mHP: %-4d", s.Monster.HitPoints))
+// activeGridLog returns the status log in most-recent-last order by walking
+// the ring buffer from the oldest slot. Empty slots are dropped so early
+// turns don't show blank lines.
+func activeGridLog(s *game.Session) []string {
+	out := make([]string, 0, len(s.GridStatusMsgs))
+	start := s.TextOutln % len(s.GridStatusMsgs)
+	for i := 0; i < len(s.GridStatusMsgs); i++ {
+		idx := (start + i) % len(s.GridStatusMsgs)
+		if msg := s.GridStatusMsgs[idx]; msg != "" {
+			out = append(out, msg)
+		}
 	}
-
-	// Position cursor for input
-	s.IO.ANSICode(fmt.Sprintf("%d;1H", model.GridRows+10))
+	return out
 }
 
 func gridTextOut(s *game.Session, msg string) {
+	s.GridStatusMsgs[s.TextOutln%len(s.GridStatusMsgs)] = msg
 	s.TextOutln++
-	if s.TextOutln > 5 {
-		s.TextOutln = 1
-	}
-	row := model.GridRows + 3 + s.TextOutln
-	// Pad to 50 chars
-	padded := msg
-	if len(padded) > 50 {
-		padded = padded[:50]
-	}
-	padded = fmt.Sprintf("%-50s", padded)
-	s.IO.ANSICode(fmt.Sprintf("%d;2H", row))
-	s.IO.ANSICode("1;30;40m" + padded)
+	renderGridScene(s)
 }
 
 func moveGridPlayer(s *game.Session, dr, dc int) {
@@ -393,15 +306,11 @@ func moveGridPlayer(s *game.Session, dr, dc int) {
 		return
 	}
 
-	// Erase old position, draw terrain
-	drawTerrainCell(s, s.UserR, s.UserC)
-
 	s.UserR = newR
 	s.UserC = newC
 	s.Character.Movement -= cost
 
-	// Draw player at new position
-	drawPlayerOnGrid(s)
+	renderGridScene(s)
 }
 
 func doGridShoot(s *game.Session) {
@@ -454,11 +363,8 @@ func doGridShoot(s *game.Session) {
 
 	s.Monster.HitPoints -= damage
 	gridTextOut(s, fmt.Sprintf("You hit %s for %d Damage!", s.Monster.Name, damage))
-
-	// Flash at monster location
-	s.IO.ANSICode(fmt.Sprintf("%d;%dH", s.MonsR+2, s.MonsC+2))
-	s.IO.ANSICode("1;33m*")
-	drawMonsterOnGrid(s)
+	// Note: dropped the single-frame yellow `*` flash at the monster's cell —
+	// gridTextOut already triggers a full re-render via renderGridScene.
 }
 
 func doGridMonsterShoot(s *game.Session) {

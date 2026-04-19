@@ -30,7 +30,8 @@ type Session struct {
 	Hit             model.HitType
 	UserMove        model.CombatType
 	MonMove         model.CombatType
-	TextOutln       int // current line in combat text window
+	TextOutln       int          // current line in combat text window (ring index)
+	GridStatusMsgs  [5]string    // ring buffer of recent status lines for grid combat
 	LastDisposition int
 
 	// Arena state
