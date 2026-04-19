@@ -51,9 +51,7 @@ func _ready() -> void:
 	user_input.grab_focus()
 
 	# Monospace font for the terminal. VileR's Mx437 IBM VGA 9x16 is the
-	# authoritative reproduction of the classic DOS VGA text-mode font —
-	# cell-tight (no built-in leading), so stacked block glyphs (█▄▀) tile
-	# seamlessly and descenders (y/g/p/q) aren't clipped at line_separation=0.
+	# authoritative reproduction of the classic DOS VGA text-mode font.
 	# Sized at 16 to match the font's native 9x16 cell (80 cols = 720 logical
 	# px, fits the 750-px terminal width with a tiny margin).
 	var vga := load("res://fonts/Mx437_IBM_VGA_9x16.ttf") as Font
@@ -62,6 +60,13 @@ func _ready() -> void:
 		var sysfont := SystemFont.new()
 		sysfont.font_names = PackedStringArray(["Menlo", "Monaco", "SF Mono", "Consolas", "Courier New"])
 		vga = sysfont
+	# Kill font smoothing so stacked block chars tile crisply at integer
+	# pixel offsets instead of having antialiased edges leave thin gaps
+	# after the 1.5x canvas stretch. Cell-tight + AA off + line_separation=0
+	# is the combo that actually makes the logo seamless.
+	if vga is FontFile:
+		(vga as FontFile).antialiasing = TextServer.FONT_ANTIALIASING_NONE
+		(vga as FontFile).subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
 	terminal_text.add_theme_font_override("normal_font", vga)
 	terminal_text.add_theme_font_override("bold_font", vga)
 	terminal_text.add_theme_font_override("italics_font", vga)
@@ -69,6 +74,7 @@ func _ready() -> void:
 	terminal_text.add_theme_font_size_override("normal_font_size", 16)
 	terminal_text.add_theme_font_size_override("bold_font_size", 16)
 	terminal_text.add_theme_font_size_override("mono_font_size", 16)
+	terminal_text.add_theme_constant_override("line_separation", 0)
 
 func _process(_delta: float) -> void:
 	ws.poll()
