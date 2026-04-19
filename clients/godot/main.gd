@@ -24,6 +24,7 @@ const PALETTE := {
 @onready var pass_input: LineEdit = $LoginPanel/VBox/PassRow/PassInput
 @onready var connect_button: Button = $LoginPanel/VBox/ConnectButton
 @onready var status_label: Label = $LoginPanel/VBox/StatusLabel
+@onready var terminal_center: HBoxContainer = $GamePanel/MainSplit/TerminalPanel/TerminalMargin/TerminalCenter
 @onready var terminal_text: RichTextLabel = $GamePanel/MainSplit/TerminalPanel/TerminalMargin/TerminalCenter/TerminalText
 @onready var scene_panel: Control = $GamePanel/MainSplit/ScenePanel
 @onready var scene_view: Control = $GamePanel/MainSplit/ScenePanel/SceneView
@@ -211,6 +212,11 @@ func _on_scene(msg: Dictionary) -> void:
 	# back off on every text-mode state would be visually noisy.
 	if not scene_panel.visible:
 		scene_panel.visible = true
+		# With the scene panel eating ~half the viewport, the terminal panel
+		# becomes narrower than the 820-logical content width. Switch the
+		# content HBox to BEGIN alignment so the LEFT (readable) edge stays
+		# anchored instead of both sides clipping under centered layout.
+		terminal_center.alignment = BoxContainer.ALIGNMENT_BEGIN
 	scene_view.set("current_scene", scene)
 	if scene_view.has_method("refresh"):
 		scene_view.refresh()

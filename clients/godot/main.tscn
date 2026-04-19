@@ -102,7 +102,7 @@ theme_override_constants/margin_bottom = 20
 
 [node name="TerminalCenter" type="HBoxContainer" parent="GamePanel/MainSplit/TerminalPanel/TerminalMargin"]
 layout_mode = 2
-alignment = 0
+alignment = 1
 
 [node name="TerminalText" type="RichTextLabel" parent="GamePanel/MainSplit/TerminalPanel/TerminalMargin/TerminalCenter"]
 layout_mode = 2
