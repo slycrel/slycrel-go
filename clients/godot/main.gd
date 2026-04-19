@@ -146,12 +146,18 @@ func _on_output(msg: Dictionary) -> void:
 	var text: String = msg.get("text", "")
 	var color: int = msg.get("color", 0)
 	var hex: String = PALETTE.get(color, "")
+	# Server text contains literal square brackets like "[E]nter the Realm" —
+	# if we pass that through append_text with bbcode_enabled, Godot parses
+	# "[E]" as a tag and swallows the content. Use push_color + add_text so
+	# the text is never BBCode-parsed.
 	if hex != "":
-		terminal_text.append_text("[color=%s]%s[/color]" % [hex, text])
+		terminal_text.push_color(Color(hex))
+		terminal_text.add_text(text)
+		terminal_text.pop()
 	else:
-		terminal_text.append_text(text)
+		terminal_text.add_text(text)
 	if msg.get("newline", false):
-		terminal_text.append_text("\n")
+		terminal_text.add_text("\n")
 
 func _on_ansi_art(msg: Dictionary) -> void:
 	# .ans files still ship as base64-encoded escape-sequence text.
@@ -164,7 +170,7 @@ func _on_ansi_art(msg: Dictionary) -> void:
 	var content := bytes.get_string_from_utf8()
 	# Strip the literal "\e[...m" + cursor codes so menus are at least readable.
 	var cleaned := _strip_ansi_literals(content)
-	terminal_text.append_text(cleaned)
+	terminal_text.add_text(cleaned)
 
 func _on_scene(msg: Dictionary) -> void:
 	var scene = msg.get("scene", {})
