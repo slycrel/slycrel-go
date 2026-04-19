@@ -63,11 +63,12 @@ func _ready() -> void:
 	terminal_text.add_theme_font_size_override("normal_font_size", 14)
 	terminal_text.add_theme_font_size_override("bold_font_size", 14)
 	terminal_text.add_theme_font_size_override("mono_font_size", 14)
-	# Tighten line height slightly so vertically stacked block chars (█▄▀)
-	# touch like they did on a DOS/VGA terminal. Going too aggressive here
-	# makes the full-height block chars in menu borders bleed into the
-	# adjacent text row; -2 is the sweet spot on Menlo/Monaco.
-	terminal_text.add_theme_constant_override("line_separation", -2)
+	# line_separation=0 — any negative value clipped descenders (y/g/p/q)
+	# in menu text because Menlo/Monaco's glyph cells include built-in
+	# leading that is not cell-tight like DOS VGA. Living with tiny gaps
+	# between stacked block glyphs in logo art. Fix path: bundle a
+	# cell-tight DOS/VGA font (e.g. Px437 IBM VGA 9x16) and revisit.
+	terminal_text.add_theme_constant_override("line_separation", 0)
 
 func _process(_delta: float) -> void:
 	ws.poll()
