@@ -1,6 +1,5 @@
-# Godot cache / generated files
+# Godot cache (regenerated from source files + .import sidecars)
 .godot/
-*.import
 
 # macOS
 .DS_Store
