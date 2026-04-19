@@ -95,15 +95,16 @@ split_offset = 0
 layout_mode = 2
 custom_minimum_size = Vector2(780, 0)
 
-[node name="TerminalScroll" type="ScrollContainer" parent="GamePanel/MainSplit/TerminalPanel"]
+[node name="TerminalCenter" type="HBoxContainer" parent="GamePanel/MainSplit/TerminalPanel"]
 layout_mode = 2
-horizontal_scroll_mode = 0
+alignment = 1
 
-[node name="TerminalText" type="RichTextLabel" parent="GamePanel/MainSplit/TerminalPanel/TerminalScroll"]
+[node name="TerminalText" type="RichTextLabel" parent="GamePanel/MainSplit/TerminalPanel/TerminalCenter"]
 layout_mode = 2
-size_flags_horizontal = 3
+custom_minimum_size = Vector2(750, 0)
 size_flags_vertical = 3
 bbcode_enabled = true
+scroll_active = true
 scroll_following = true
 selection_enabled = true
 
