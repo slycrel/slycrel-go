@@ -6,14 +6,16 @@ extends Control
 var current_scene: Dictionary = {}
 
 # Cell size. Tweak together with viewport size in project.godot.
-const CELL_W := 16.0
-const CELL_H := 22.0
+# Logical pixels — the window applies a 1.5x canvas_items stretch on top of
+# these values, so the visual cell appears ~21x30 px on screen.
+const CELL_W := 14.0
+const CELL_H := 20.0
 # HUD renders below the grid (the scene panel is tall-and-narrow, so "below"
 # fits better than "beside"). HUD_TOP_PAD separates grid from HUD.
-const HUD_TOP_PAD := 18.0
-const HUD_COL_W := 220.0        # column width when laying out HUD fields side-by-side
-const FONT_PX := 16
-const HUD_FONT_PX := 14
+const HUD_TOP_PAD := 20.0
+const HUD_COL_W := 200.0        # column width when laying out HUD fields side-by-side
+const FONT_PX := 14
+const HUD_FONT_PX := 13
 const HUD_LINE_H := 18.0
 
 # Terrain palette — mirrors mechanics.GetTerrainDisplay but in RGB so we can
