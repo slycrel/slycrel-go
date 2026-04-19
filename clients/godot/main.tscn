@@ -95,11 +95,16 @@ split_offset = 0
 layout_mode = 2
 custom_minimum_size = Vector2(780, 0)
 
-[node name="TerminalCenter" type="HBoxContainer" parent="GamePanel/MainSplit/TerminalPanel"]
+[node name="TerminalMargin" type="MarginContainer" parent="GamePanel/MainSplit/TerminalPanel"]
+layout_mode = 2
+theme_override_constants/margin_top = 60
+theme_override_constants/margin_bottom = 20
+
+[node name="TerminalCenter" type="HBoxContainer" parent="GamePanel/MainSplit/TerminalPanel/TerminalMargin"]
 layout_mode = 2
 alignment = 1
 
-[node name="TerminalText" type="RichTextLabel" parent="GamePanel/MainSplit/TerminalPanel/TerminalCenter"]
+[node name="TerminalText" type="RichTextLabel" parent="GamePanel/MainSplit/TerminalPanel/TerminalMargin/TerminalCenter"]
 layout_mode = 2
 custom_minimum_size = Vector2(750, 0)
 size_flags_vertical = 3

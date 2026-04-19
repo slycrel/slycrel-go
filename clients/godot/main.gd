@@ -24,7 +24,7 @@ const PALETTE := {
 @onready var pass_input: LineEdit = $LoginPanel/VBox/PassRow/PassInput
 @onready var connect_button: Button = $LoginPanel/VBox/ConnectButton
 @onready var status_label: Label = $LoginPanel/VBox/StatusLabel
-@onready var terminal_text: RichTextLabel = $GamePanel/MainSplit/TerminalPanel/TerminalCenter/TerminalText
+@onready var terminal_text: RichTextLabel = $GamePanel/MainSplit/TerminalPanel/TerminalMargin/TerminalCenter/TerminalText
 @onready var scene_panel: Control = $GamePanel/MainSplit/ScenePanel
 @onready var scene_view: Control = $GamePanel/MainSplit/ScenePanel/SceneView
 @onready var prompt_label: Label = $GamePanel/PromptRow/PromptLabel
@@ -63,10 +63,11 @@ func _ready() -> void:
 	terminal_text.add_theme_font_size_override("normal_font_size", 14)
 	terminal_text.add_theme_font_size_override("bold_font_size", 14)
 	terminal_text.add_theme_font_size_override("mono_font_size", 14)
-	# Tighten line height so vertically stacked block chars (█▄▀) touch
-	# like they did on a DOS/VGA terminal instead of showing horizontal
-	# gaps between lines of the logo.
-	terminal_text.add_theme_constant_override("line_separation", -4)
+	# Tighten line height slightly so vertically stacked block chars (█▄▀)
+	# touch like they did on a DOS/VGA terminal. Going too aggressive here
+	# makes the full-height block chars in menu borders bleed into the
+	# adjacent text row; -2 is the sweet spot on Menlo/Monaco.
+	terminal_text.add_theme_constant_override("line_separation", -2)
 
 func _process(_delta: float) -> void:
 	ws.poll()
