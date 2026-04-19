@@ -15,7 +15,10 @@ window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/size/resizable=true
 window/stretch/mode="canvas_items"
-window/stretch/scale=1.5
+; Integer scale so the 9x16 cell-tight VGA font always renders on whole
+; pixel boundaries — any fractional scale (1.5x etc.) leaves sub-pixel
+; seams between stacked block glyphs.
+window/stretch/scale=2.0
 
 [rendering]
 
