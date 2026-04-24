@@ -1,5 +1,5 @@
-# Binary
-slycrel
+# Binary (anchored to repo root — don't clobber cmd/slycrel/)
+/slycrel
 
 # Game state (player data, not source)
 data/state/

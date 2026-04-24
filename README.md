@@ -35,6 +35,10 @@ curl http://localhost:8080/health
 
 See `internal/io/ws_protocol.go` for the full client↔server message schema.
 
+## Godot Client
+
+`clients/godot/` is a graphical client for the WebSocket server — a Godot 4.6 project that renders the ANSI menus with a DOS VGA font and draws grid-combat scenes with a custom tilemap. Open `clients/godot/project.godot` in Godot, set the server address in the connect screen, and play. See `clients/godot/QUICKSTART.md` for details.
+
 ## Quick Start
 
 ```bash
@@ -84,13 +88,18 @@ Requires Go 1.21+ and a terminal that supports ANSI escape codes (virtually all 
 ## Project Structure
 
 ```
-cmd/slycrel/          Entry point
+cmd/
+  slycrel/            Standalone console app (terminal play)
+  server/             Headless WebSocket server (multi-client play)
+  convert_ansi/       CP437 .ans → ANSI-escape converter tool
+clients/
+  godot/              Godot 4.6 graphical WebSocket client
 internal/
   model/              Data structures (character, monster, weapon, armor, etc.)
   game/               Game engine, session, state machine
     states/           One file per game location/flow
   mechanics/          Pure game logic (combat, leveling, pathfinding, etc.)
-  io/                 I/O abstraction (terminal, ANSI helpers)
+  io/                 I/O abstraction (terminal + WebSocket impls, ANSI helpers)
   store/              Data persistence (JSON file store)
   editor/             Terrain map editor
 data/
