@@ -28,3 +28,6 @@ state/
 # clients/web/data so absolute /data/... fetches resolve from the
 # deploy root. Local dev doesn't need this; it serves from repo root.
 /clients/web/data/
+
+# Wrangler's local cache, written next to deploy.sh on each deploy.
+.wrangler/
