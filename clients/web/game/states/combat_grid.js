@@ -9,6 +9,9 @@ import {
 } from './combat_text.js';
 
 const LOG_SIZE = 5;
+// Per-step pause so the monster's path animates instead of teleporting.
+const MONSTER_STEP_MS = 110;
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 // Pure HTML rendering — we have the full RGB palette, so just emit a
 // styled span per cell into a <pre>. One sweep, set innerHTML once.
@@ -293,13 +296,16 @@ export class GridMonsterMoveState {
         session.monsR = nr;
         session.monsC = nc;
         moveLeft -= cost;
+        // Render + pause per step so the player can see the monster
+        // walking its path instead of teleporting to its final cell.
+        renderGridScene(session);
+        await sleep(MONSTER_STEP_MS);
         if (randBetween(1, 5) === 1 && moveLeft >= 3) {
           doGridMonsterShoot(session);
           moveLeft -= 3;
         }
         if (moveLeft < 1) break;
       }
-      renderGridScene(session);
     }
     const spd = Math.max(c.speed, 5);
     const spread = Math.floor(spd / 5);
