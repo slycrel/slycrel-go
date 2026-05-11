@@ -316,6 +316,12 @@ export class OpponentAttackStageState {
 export class UserKilledState {
   async enter(session) {
     const { io, character: c } = session;
+    if (c.location === WhereType.TheArenaCombat) {
+      c.location = WhereType.TheArenaMenu;
+      const { ArenaChallengeLostState } = await import('./arena.js');
+      session.setNext(new ArenaChallengeLostState());
+      return;
+    }
     io.cr();
     io.println("Tough luck. You're dead, buddy.", 4);
     io.println("Seeya in Hero's Heaven!", 5);
@@ -330,6 +336,12 @@ export class UserKilledState {
 export class UserVictoriousState {
   async enter(session) {
     const { io, character: c, monster } = session;
+    if (c.location === WhereType.TheArenaCombat) {
+      c.location = WhereType.TheArenaMenu;
+      const { ArenaChallengeWonState } = await import('./arena.js');
+      session.setNext(new ArenaChallengeWonState());
+      return;
+    }
     io.cr();
     io.println(`You have defeated the ${monster.name}!!`, 3);
     io.cr();

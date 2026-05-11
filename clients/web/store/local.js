@@ -87,6 +87,66 @@ export function saveInn(inn) {
   localStorage.setItem(INN_KEY, JSON.stringify(inn));
 }
 
+// Find a character by their in-game name (not BBS login). Walks all saved
+// characters — slow at scale, but fine for a localStorage-backed game.
+export function findCharacterByName(name) {
+  const needle = name.toLowerCase();
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('slycrel.character.')) continue;
+    try {
+      const c = JSON.parse(localStorage.getItem(key));
+      if (c.name?.toLowerCase() === needle) return c;
+    } catch {}
+  }
+  return null;
+}
+
+// Arena gladiator fights + bets — shared mutable state.
+const FIGHTS_KEY = 'slycrel.gladiator_fights';
+const BETS_KEY = 'slycrel.gladiator_bets';
+
+export function loadGladiatorFights() {
+  const raw = localStorage.getItem(FIGHTS_KEY);
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch { return []; }
+}
+
+export function saveGladiatorFight(fight) {
+  const fights = loadGladiatorFights();
+  fights.push(fight);
+  localStorage.setItem(FIGHTS_KEY, JSON.stringify(fights));
+}
+
+export function loadBets() {
+  const raw = localStorage.getItem(BETS_KEY);
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch { return []; }
+}
+
+export function saveBet(bet) {
+  const bets = loadBets();
+  bets.push(bet);
+  localStorage.setItem(BETS_KEY, JSON.stringify(bets));
+}
+
+// Per-player news/mail. Keyed by BBS name so the message survives logins.
+const NEWS_KEY = (bbsName) => `slycrel.news.${bbsName}`;
+
+export function readNews(bbsName) {
+  return localStorage.getItem(NEWS_KEY(bbsName)) ?? '';
+}
+
+export function writeNews(bbsName, text) {
+  const prev = readNews(bbsName);
+  const next = prev ? prev + '\n' + text : text;
+  localStorage.setItem(NEWS_KEY(bbsName), next);
+}
+
+export function clearNews(bbsName) {
+  localStorage.removeItem(NEWS_KEY(bbsName));
+}
+
 // Walk localStorage and return every saved character. For a browser-only
 // build that's usually just the active player, but Tavern's View Guilds
 // still wants to enumerate them. Mirrors store.ListCharacters in Go.

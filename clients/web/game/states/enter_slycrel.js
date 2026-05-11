@@ -1,4 +1,4 @@
-import { findCharacterByBBSName, getActiveUser, setActiveUser } from '../../store/local.js';
+import { findCharacterByBBSName, getActiveUser, setActiveUser, readNews, clearNews } from '../../store/local.js';
 import { CharacterCreateState } from './character_create.js';
 import { TownState } from './town.js';
 import { BeginState } from './begin.js';
@@ -33,6 +33,17 @@ export class EnterSlycrelState {
     }
 
     session.character = char;
+
+    // Show pending arena mail (e.g. "you've been slaughtered by X").
+    const news = readNews(user);
+    if (news) {
+      io.cr();
+      io.println('=== Daily News ===', 4);
+      for (const line of news.split('\n')) io.println(line, 1);
+      clearNews(user);
+      await io.pausePrompt();
+    }
+
     session.setNext(new TownState());
   }
 }

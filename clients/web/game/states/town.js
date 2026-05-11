@@ -12,6 +12,7 @@ import { TavernState } from './tavern.js';
 import { ArmoryState } from './armory.js';
 import { InnState } from './inn.js';
 import { WildernessState } from './wilderness.js';
+import { ArenaState } from './arena.js';
 
 // Mapping of the town menu's letter keys to human-readable location names,
 // used by the stub message until each location is ported.
@@ -79,6 +80,7 @@ export class TownPromptState {
       L: () => new ArmoryState(),
       I: () => new InnState(),
       W: () => new WildernessState(),
+      A: () => new ArenaState(),
     };
     if (SUB_STATES[choice]) {
       session.setNext(SUB_STATES[choice]());
