@@ -18,9 +18,13 @@ export class DeadState {
       io.cr();
       session.setNext(new BeginState());
     } else {
-      io.println('Now Returning to the BBS', 5);
+      // Browser-only: there's no BBS to return to, so quitting the run
+      // loop just hangs the page. Drop back to the title instead — the
+      // character is still flagged dead, so enter_slycrel will route any
+      // re-entry back to this prompt until they pick New Day.
+      io.println('Returning to the gateway...', 5);
       io.cr();
-      session.quit();
+      session.setNext(new BeginState());
     }
   }
 }

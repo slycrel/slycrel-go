@@ -38,6 +38,14 @@ function printLines(io, text, color) {
   for (const line of text.split('\n')) io.println(line, color);
 }
 
+// Brief pause so a flurry of state-machine transitions doesn't paint
+// the monster's response and the next prompt onto the screen in the
+// same frame. ~400ms is enough to read a one-line action.
+const COMBAT_PAUSE_MS = 400;
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
 // SetupCombatState — port of wilderness.go SetupCombatState. Decrements
 // exploration, loads a random region monster, then routes to text combat.
 // The Go version goes to grid_combat first; we skip that until phase 5.
@@ -312,6 +320,7 @@ export class OpponentAttackStageState {
         session.hit = (session.hit === HitType.TheUser) ? HitType.UserOnly : HitType.Neither;
         break;
     }
+    await sleep(COMBAT_PAUSE_MS);
     session.setNext(new TextCombatLoopState());
   }
 }

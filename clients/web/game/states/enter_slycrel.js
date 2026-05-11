@@ -34,6 +34,16 @@ export class EnterSlycrelState {
 
     session.character = char;
 
+    // Dead characters get routed back to the resurrect prompt; without
+    // this, exiting and re-entering would silently bypass death.
+    if (!char.alive) {
+      io.cr();
+      io.println('You are still dead from your last fight.', 6);
+      const { DeadState } = await import('./dead.js');
+      session.setNext(new DeadState());
+      return;
+    }
+
     // Show pending arena mail (e.g. "you've been slaughtered by X").
     const news = readNews(user);
     if (news) {
