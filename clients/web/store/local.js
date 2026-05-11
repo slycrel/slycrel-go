@@ -127,6 +127,10 @@ export function saveGladiatorFight(fight) {
   localStorage.setItem(FIGHTS_KEY, JSON.stringify(fights));
 }
 
+export function saveAllGladiatorFights(fights) {
+  localStorage.setItem(FIGHTS_KEY, JSON.stringify(fights));
+}
+
 export function loadBets() {
   const raw = localStorage.getItem(BETS_KEY);
   if (!raw) return [];
@@ -136,6 +140,10 @@ export function loadBets() {
 export function saveBet(bet) {
   const bets = loadBets();
   bets.push(bet);
+  localStorage.setItem(BETS_KEY, JSON.stringify(bets));
+}
+
+export function saveAllBets(bets) {
   localStorage.setItem(BETS_KEY, JSON.stringify(bets));
 }
 

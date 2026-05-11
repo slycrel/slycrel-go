@@ -1,4 +1,8 @@
 import { randBetween } from './rand.js';
+import {
+  loadGladiatorFights, loadBets, saveAllGladiatorFights, saveAllBets,
+  writeNews,
+} from '../store/local.js';
 
 // Convert a character into a Monster record for arena combat.
 // Mirrors mechanics/arena.go User2Monster.
@@ -37,6 +41,87 @@ export function arenaAppraisal(c) {
   val += Math.abs(c.faith) * 100;
   val += Math.abs(c.flirt1 + c.flirt2) * 100;
   return val;
+}
+
+// Resolve any pending gladiator fights this character is involved in
+// (as combatant or bettor). Fills out news entries for each resolution
+// and mutates the character (rewards/penalties/coins/alive). Called
+// during newDay so a fight scheduled yesterday actually pays out.
+//
+// odds = [challenger, opponent] where the bigger number is the underdog;
+// challenger's win probability is odds[1] / (odds[0] + odds[1]).
+// Winnings on a successful bet: stake + stake * winnerOdds.
+export function resolveGladiatorFights(c) {
+  const fights = loadGladiatorFights();
+  if (!fights.length) return;
+  const bets = loadBets();
+  const lcName = (c.name ?? '').toLowerCase();
+
+  // Player's bets keyed by 1-based fight number.
+  const myBets = new Map();
+  for (const b of bets) {
+    if (b.fileName?.toLowerCase() === lcName) myBets.set(b.fightNum, b);
+  }
+
+  const remainingFights = [];
+  const remainingBets = bets.filter(b => b.fileName?.toLowerCase() !== lcName);
+
+  fights.forEach((fight, idx) => {
+    const fightNum = idx + 1;
+    const isChallenger = fight.challenger?.toLowerCase() === lcName;
+    const isOpponent = fight.opponent?.toLowerCase() === lcName;
+    const involved = isChallenger || isOpponent;
+    const myBet = myBets.get(fightNum);
+
+    if (!involved && !myBet) {
+      remainingFights.push(fight);
+      return;
+    }
+
+    const [oc, oo] = fight.odds;
+    const total = oc + oo;
+    const roll = randBetween(1, total);
+    const challengerWins = roll <= oo;
+    const winnerName = challengerWins ? fight.challenger : fight.opponent;
+    const loserName = challengerWins ? fight.opponent : fight.challenger;
+
+    if (involved) {
+      const playerWon = (isChallenger && challengerWins) || (isOpponent && !challengerWins);
+      if (playerWon) {
+        const xp = 50, coins = 75;
+        c.totalExperience += xp;
+        c.spendingExperience += xp;
+        c.coinsHand += coins;
+        c.fightsWon += 1;
+        writeNews(c.bbsName,
+          `Gladiator: You defeated ${loserName} in the arena! +${xp} XP, +${coins} coins.`);
+      } else {
+        c.totalExperience = Math.max(0, c.totalExperience - 30);
+        c.spendingExperience = Math.max(0, c.spendingExperience - 30);
+        c.alive = false;
+        writeNews(c.bbsName, `Gladiator: You were slain by ${winnerName} in the arena.`);
+      }
+      c.totalFights += 1;
+    }
+
+    if (myBet) {
+      const betWon = (challengerWins && myBet.forChallenger) ||
+                     (!challengerWins && !myBet.forChallenger);
+      if (betWon) {
+        const winnerOdds = challengerWins ? oc : oo;
+        const payout = myBet.bet + myBet.bet * winnerOdds;
+        c.coinsHand += payout;
+        writeNews(c.bbsName,
+          `Bet won: ${fight.challenger} vs ${fight.opponent} — ${winnerName} took it. Payout: ${payout} coins.`);
+      } else {
+        writeNews(c.bbsName,
+          `Bet lost: ${fight.challenger} vs ${fight.opponent} — ${winnerName} won. You forfeit ${myBet.bet} coins.`);
+      }
+    }
+  });
+
+  saveAllGladiatorFights(remainingFights);
+  saveAllBets(remainingBets);
 }
 
 export function calcOdds(challengerVal, opponentVal) {

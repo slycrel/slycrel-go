@@ -1,5 +1,6 @@
 import { findCharacterByBBSName, getActiveUser, setActiveUser, readNews, clearNews, saveCharacter } from '../../store/local.js';
 import { newDayForUser } from '../../mechanics/resurrection.js';
+import { resolveGladiatorFights } from '../../mechanics/arena.js';
 import { todayDate } from '../../mechanics/rand.js';
 import { CharacterCreateState } from './character_create.js';
 import { TownState } from './town.js';
@@ -47,8 +48,18 @@ export class EnterSlycrelState {
         io.println('A new day dawns... you have been restored.', 3);
       }
       newDayForUser(char);
+      // Resolve any gladiator fights scheduled before today. This may
+      // re-kill the character if they lost their match — re-check below.
+      resolveGladiatorFights(char);
       char.lastOn = today;
       saveCharacter(char);
+      if (!char.alive) {
+        io.cr();
+        io.println('You died overnight in the gladiator pits...', 6);
+        const { DeadState } = await import('./dead.js');
+        session.setNext(new DeadState());
+        return;
+      }
     } else if (!char.alive) {
       io.cr();
       io.println('You are still dead from your last fight.', 6);
