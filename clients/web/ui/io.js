@@ -1,14 +1,18 @@
 import { ansiToHtml } from './ansi.js';
 
-const PALETTE = {
-  0: '#000000',
-  1: '#cd0000',
-  2: '#00cd00',
-  3: '#cdcd00',
-  4: '#5c5cff',
-  5: '#cd00cd',
-  6: '#00cdcd',
-  7: '#e5e5e5',
+// Mirrors internal/io/ansi.go's colorCodes — the original Slycrel palette
+// uses 1=cyan (info/prompts), 2=bright white, 3=bright green, 4=bright
+// yellow (character names), 5=bright magenta, 6=bright red (errors).
+// Routing through ansi_up keeps println output visually consistent with
+// the BBS-art renderer (which also speaks ANSI escape codes).
+const COLOR_TO_ANSI = {
+  0: '\x1b[0m',
+  1: '\x1b[0;36m',
+  2: '\x1b[1;37m',
+  3: '\x1b[1;32m',
+  4: '\x1b[1;33m',
+  5: '\x1b[1;35m',
+  6: '\x1b[1;31m',
 };
 
 export class Io {
@@ -24,17 +28,27 @@ export class Io {
     this.root.appendChild(document.createElement('br'));
   }
 
-  println(text, color = 7) {
+  println(text, color) {
+    const wrapped = color !== undefined
+      ? (COLOR_TO_ANSI[color] ?? '') + text + '\x1b[0m'
+      : text;
     const div = document.createElement('div');
-    div.textContent = text;
-    div.style.color = PALETTE[color] ?? PALETTE[7];
+    div.innerHTML = ansiToHtml(wrapped);
     this.root.appendChild(div);
   }
 
   async showAnsiFile(name) {
     const res = await fetch(`/data/ansi/${name}.ans`);
     if (!res.ok) throw new Error(`ansi fetch ${name}: ${res.status}`);
-    const text = (await res.text()).replace(/\\e/g, '\x1b');
+    // Restore real ESC (the files store it as the literal "\e" sequence)
+    // and unpack \e[NC cursor-forward escapes into N literal spaces — the
+    // menu art uses them for column alignment and ansi_up drops them.
+    // \e[2J (clear) and \e[H (home) are no-ops in our scrolling <pre>.
+    const text = (await res.text())
+      .replace(/\\e/g, '\x1b')
+      .replace(/\x1b\[(\d+)C/g, (_, n) => ' '.repeat(parseInt(n, 10)))
+      .replace(/\x1b\[2J/g, '')
+      .replace(/\x1b\[H/g, '');
     const pre = document.createElement('pre');
     pre.innerHTML = ansiToHtml(text);
     this.root.appendChild(pre);
