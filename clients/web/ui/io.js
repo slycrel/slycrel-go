@@ -118,6 +118,57 @@ export class Io {
     });
   }
 
+  // Integer in [min, max]. Empty input + Enter is treated as 0 (the "abort"
+  // sentinel in the bank/inn flows). Out-of-range input prints a hint and
+  // re-prompts on a new line.
+  numbersPrompt(promptText, min, max) {
+    return new Promise((resolve) => {
+      const attempt = () => {
+        const line = document.createElement('div');
+        line.className = 'prompt';
+        this.root.appendChild(line);
+
+        const promptSpan = document.createElement('span');
+        promptSpan.textContent = promptText + ' ';
+        line.appendChild(promptSpan);
+
+        const inputSpan = document.createElement('span');
+        line.appendChild(inputSpan);
+
+        const cursor = document.createElement('span');
+        cursor.className = 'cursor';
+        line.appendChild(cursor);
+        line.scrollIntoView({ block: 'end' });
+
+        let buffer = '';
+        const onKey = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            document.removeEventListener('keydown', onKey);
+            cursor.remove();
+            const n = buffer === '' ? 0 : parseInt(buffer, 10);
+            if (Number.isNaN(n) || n < min || n > max) {
+              this.println(`Please enter a value between ${min} and ${max}.`, 6);
+              attempt();
+              return;
+            }
+            resolve(n);
+          } else if (e.key === 'Backspace') {
+            e.preventDefault();
+            buffer = buffer.slice(0, -1);
+            inputSpan.textContent = buffer;
+          } else if (/^\d$/.test(e.key)) {
+            e.preventDefault();
+            buffer += e.key;
+            inputSpan.textContent = buffer;
+          }
+        };
+        document.addEventListener('keydown', onKey);
+      };
+      attempt();
+    });
+  }
+
   // Mirrors slyio.PausePrompt — any printable key (or Enter/Space) continues.
   pausePrompt(promptText = '--press a key--') {
     const span = document.createElement('div');

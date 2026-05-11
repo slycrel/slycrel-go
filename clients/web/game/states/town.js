@@ -1,6 +1,7 @@
 import { WhereType } from '../../model/enums.js';
 import { saveCharacter } from '../../store/local.js';
 import { BeginState } from './begin.js';
+import { BankState } from './bank.js';
 
 // Mapping of the town menu's letter keys to human-readable location names,
 // used by the stub message until each location is ported.
@@ -57,6 +58,11 @@ export class TownPromptState {
       saveCharacter(session.character);
       await io.pausePrompt();
       session.setNext(new BeginState());
+      return;
+    }
+
+    if (choice === 'B') {
+      session.setNext(new BankState());
       return;
     }
 
