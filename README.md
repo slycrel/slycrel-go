@@ -35,6 +35,21 @@ curl http://localhost:8080/health
 
 See `internal/io/ws_protocol.go` for the full client↔server message schema.
 
+### Docker
+
+A static Linux image (~6.4 MB) for `cmd/server` is defined in `Dockerfile` —
+multi-stage build with a `FROM scratch` final stage (no shell, no libc, just
+the static Go binary and the `data/` assets).
+
+```bash
+docker build -t slycrel:dev .
+docker run --rm -p 8080:8080 -v "$PWD/state:/state" slycrel:dev
+```
+
+`/state` inside the container is the writable directory for character and
+game data. Bind-mount the gitignored host `state/` directory onto it for
+local persistence. For Cloudflare Containers deployment, see `deploy/` (TBD).
+
 ## Godot Client
 
 `clients/godot/` is a graphical client for the WebSocket server — a Godot 4.6 project that renders the ANSI menus with a DOS VGA font and draws grid-combat scenes with a custom tilemap. Open `clients/godot/project.godot` in Godot, set the server address in the connect screen, and play. See `clients/godot/QUICKSTART.md` for details.
