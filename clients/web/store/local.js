@@ -26,3 +26,16 @@ export function setActiveUser(bbsName) {
 export function clearActiveUser() {
   localStorage.removeItem(ACTIVE_USER_KEY);
 }
+
+// Walk localStorage and return every saved character. For a browser-only
+// build that's usually just the active player, but Tavern's View Guilds
+// still wants to enumerate them. Mirrors store.ListCharacters in Go.
+export function listCharacters() {
+  const out = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('slycrel.character.')) continue;
+    try { out.push(JSON.parse(localStorage.getItem(key))); } catch {}
+  }
+  return out;
+}
