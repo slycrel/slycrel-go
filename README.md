@@ -48,7 +48,29 @@ docker run --rm -p 8080:8080 -v "$PWD/state:/state" slycrel:dev
 
 `/state` inside the container is the writable directory for character and
 game data. Bind-mount the gitignored host `state/` directory onto it for
-local persistence. For Cloudflare Containers deployment, see `deploy/` (TBD).
+local persistence.
+
+### Cloudflare Containers
+
+`deploy/` contains the [Cloudflare Containers](https://developers.cloudflare.com/containers/)
+deploy: a Worker (`deploy/src/index.js`) that forwards all traffic — `/ws`,
+`/health`, and anything else — to a single container instance running the
+image built from the repo-root `Dockerfile`.
+
+```bash
+cd deploy
+npm install
+npx wrangler login        # one-time, opens a browser
+npx wrangler deploy       # builds image, pushes to CF registry, deploys Worker
+```
+
+Requires a Cloudflare account on the **Workers Paid** plan. After the first
+deploy, the Worker URL is printed (e.g. `https://slycrel.<account>.workers.dev`).
+
+`max_instances` is pinned to `1` in `deploy/wrangler.toml` — the Go server
+holds all game state in-process, so additional instances would silently fork
+the game into parallel universes. Phase 4 (R2/D1-backed store) is the
+prerequisite for horizontal scaling.
 
 ## Godot Client
 
