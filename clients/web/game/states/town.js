@@ -1,5 +1,6 @@
 import { WhereType } from '../../model/enums.js';
 import { saveCharacter } from '../../store/local.js';
+import { todayDate } from '../../mechanics/rand.js';
 import { BeginState } from './begin.js';
 import { BankState } from './bank.js';
 import { JailState } from './jail.js';
@@ -63,6 +64,9 @@ export class TownPromptState {
     }
     if (choice === 'X') {
       io.println('Saving and returning to the gateway...', 5);
+      // Stamp lastOn at logout so the new-day check on re-entry knows
+      // whether to refresh daily limits.
+      session.character.lastOn = todayDate();
       saveCharacter(session.character);
       await io.pausePrompt();
       session.setNext(new BeginState());

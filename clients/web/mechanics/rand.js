@@ -8,3 +8,11 @@ export function randBetween(min, max) {
 export function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
+
+// Today as a YYYYMMDD integer — matches todayDate() in the Go side and is
+// what we store in Character.lastOn so the new-day check on login is a
+// plain integer comparison.
+export function todayDate() {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}

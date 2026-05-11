@@ -1,4 +1,6 @@
-import { findCharacterByBBSName, getActiveUser, setActiveUser, readNews, clearNews } from '../../store/local.js';
+import { findCharacterByBBSName, getActiveUser, setActiveUser, readNews, clearNews, saveCharacter } from '../../store/local.js';
+import { newDayForUser } from '../../mechanics/resurrection.js';
+import { todayDate } from '../../mechanics/rand.js';
 import { CharacterCreateState } from './character_create.js';
 import { TownState } from './town.js';
 import { BeginState } from './begin.js';
@@ -34,9 +36,20 @@ export class EnterSlycrelState {
 
     session.character = char;
 
-    // Dead characters get routed back to the resurrect prompt; without
-    // this, exiting and re-entering would silently bypass death.
-    if (!char.alive) {
+    // New-day check mirrors enter_slycrel.go: if lastOn is older than
+    // today, refresh daily limits (and resurrect a dead character).
+    // If still dead within the same day, the player has to wait until
+    // tomorrow or use the resurrect prompt manually.
+    const today = todayDate();
+    if (char.lastOn < today) {
+      if (!char.alive) {
+        io.cr();
+        io.println('A new day dawns... you have been restored.', 3);
+      }
+      newDayForUser(char);
+      char.lastOn = today;
+      saveCharacter(char);
+    } else if (!char.alive) {
       io.cr();
       io.println('You are still dead from your last fight.', 6);
       const { DeadState } = await import('./dead.js');

@@ -1,4 +1,5 @@
 import { newDayForUser } from '../../mechanics/resurrection.js';
+import { todayDate } from '../../mechanics/rand.js';
 import { saveCharacter } from '../../store/local.js';
 import { BeginState } from './begin.js';
 
@@ -13,6 +14,7 @@ export class DeadState {
     io.cr();
     if (choice === 'N') {
       newDayForUser(session.character);
+      session.character.lastOn = todayDate();
       saveCharacter(session.character);
       io.println('A new day dawns... you have been restored.', 3);
       io.cr();
