@@ -20,4 +20,4 @@ cp -r data clients/web/data
 # Clean up the staged copy on exit even if wrangler fails.
 trap 'rm -rf clients/web/data' EXIT
 
-npx wrangler pages deploy clients/web --project-name slycrel "$@"
+npx wrangler pages deploy clients/web --project-name slycrel --commit-dirty=true "$@"
