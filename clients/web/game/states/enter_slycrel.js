@@ -1,6 +1,7 @@
 import { findCharacterByBBSName, getActiveUser, setActiveUser, readNews, clearNews, saveCharacter } from '../../store/local.js';
 import { newDayForUser } from '../../mechanics/resurrection.js';
 import { resolveGladiatorFights } from '../../mechanics/arena.js';
+import { runDailyUpkeep } from '../../mechanics/upkeep.js';
 import { todayDate } from '../../mechanics/rand.js';
 import { CharacterCreateState } from './character_create.js';
 import { TownState } from './town.js';
@@ -51,6 +52,9 @@ export class EnterSlycrelState {
       // Resolve any gladiator fights scheduled before today. This may
       // re-kill the character if they lost their match — re-check below.
       resolveGladiatorFights(char);
+      // Shared-world upkeep (inn rent decrement, evictions). Idempotent
+      // by inn.lastUpkeep so a second login on the same day is a no-op.
+      runDailyUpkeep(today);
       char.lastOn = today;
       saveCharacter(char);
       if (!char.alive) {
