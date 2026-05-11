@@ -57,3 +57,14 @@ export function isArmorEmpty(a) {
 export function genderString(c) {
   return c.gender ? 'Male' : 'Female';
 }
+
+// Mirrors Character.Level() in internal/model/character.go — returns the
+// primary class level.
+export function level(c) {
+  switch (c.charClass) {
+    case CharClass.Fighter: return c.fighterLvl;
+    case CharClass.Thief:   return c.thiefLvl;
+    case CharClass.Mage:    return c.mageLvl;
+    default:                return c.fighterLvl;
+  }
+}

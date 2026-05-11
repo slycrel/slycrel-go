@@ -169,6 +169,12 @@ export class Io {
     });
   }
 
+  // Mirrors slyio.YesNoQuestion. Resolves true for Y, false for N.
+  async yesNoQuestion(prompt) {
+    const ch = await this.lettersPrompt(prompt + ' [Y/N]', 'YN');
+    return ch === 'Y';
+  }
+
   // Mirrors slyio.PausePrompt — any printable key (or Enter/Space) continues.
   pausePrompt(promptText = '--press a key--') {
     const span = document.createElement('div');

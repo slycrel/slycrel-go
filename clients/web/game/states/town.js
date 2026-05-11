@@ -2,6 +2,10 @@ import { WhereType } from '../../model/enums.js';
 import { saveCharacter } from '../../store/local.js';
 import { BeginState } from './begin.js';
 import { BankState } from './bank.js';
+import { JailState } from './jail.js';
+import { TowerState } from './tower.js';
+import { BlacksmithState } from './blacksmith.js';
+import { ViewCharacterState } from './view_character.js';
 
 // Mapping of the town menu's letter keys to human-readable location names,
 // used by the stub message until each location is ported.
@@ -46,11 +50,8 @@ export class TownPromptState {
       return;
     }
     if (choice === 'V') {
-      // View character — defer to a real port once view_character is callable
-      // from the town menu. For now, stub like the rest of the locations.
-      io.println('(stub) character sheet from town menu not yet implemented.', 6);
-      await io.pausePrompt();
-      session.setNext(new TownPromptState());
+      session.setReturn(new TownPromptState());
+      session.setNext(new ViewCharacterState());
       return;
     }
     if (choice === 'X') {
@@ -61,8 +62,14 @@ export class TownPromptState {
       return;
     }
 
-    if (choice === 'B') {
-      session.setNext(new BankState());
+    const SUB_STATES = {
+      B: () => new BankState(),
+      J: () => new JailState(),
+      S: () => new BlacksmithState(),
+      '@': () => new TowerState(),
+    };
+    if (SUB_STATES[choice]) {
+      session.setNext(SUB_STATES[choice]());
       return;
     }
 
