@@ -60,3 +60,68 @@ export function rollChar(c, charClass) {
 export function randomClass() {
   return pick([CharClass.Fighter, CharClass.Thief, CharClass.Mage]);
 }
+
+// Mirrors NextLevelUp in internal/mechanics/leveling.go.
+// f(x) = difficulty * x^3 + f(x-1), base = BASE_EXP at level 1.
+export function nextLevelUp(level, difficulty) {
+  if (level <= 1) return BASE_EXP;
+  let total = BASE_EXP;
+  for (let i = 2; i <= level; i++) {
+    total += difficulty * i * i * i;
+  }
+  return total;
+}
+
+// Mirrors GiveNewLevel — advances the character one level in their primary
+// class and boosts stats.
+export function giveNewLevel(c) {
+  switch (c.charClass) {
+    case CharClass.Fighter:
+      c.fighterLvl += 1;
+      c.maxHP += randBetween(4, 5 + c.fighterLvl);
+      c.hitPoints = c.maxHP;
+      c.speed += 1;
+      c.strength += randBetween(1, 2);
+      c.dexterity += randBetween(0, 1);
+      c.fame += 1;
+      c.flirt1 += randBetween(0, 2);
+      c.flirt2 += randBetween(0, 2);
+      break;
+    case CharClass.Mage:
+      c.mageLvl += 1;
+      c.maxHP += randBetween(2, 3 + c.mageLvl);
+      c.hitPoints = c.maxHP;
+      c.speed += 1;
+      c.strength += randBetween(0, 1);
+      c.dexterity += randBetween(0, 1);
+      c.maxPsyche += randBetween(1, 2);
+      c.psyche = c.maxPsyche;
+      c.fame += 1;
+      c.flirt1 += randBetween(0, 2);
+      c.flirt2 += randBetween(0, 2);
+      break;
+    case CharClass.Thief:
+      c.thiefLvl += 1;
+      c.maxHP += randBetween(3, 4 + c.thiefLvl);
+      c.hitPoints = c.maxHP;
+      c.speed += randBetween(1, 2);
+      c.strength += randBetween(1, 2);
+      c.dexterity += randBetween(1, 2);
+      c.fame += 1;
+      c.flirt1 += randBetween(0, 2);
+      c.flirt2 += randBetween(0, 2);
+      break;
+  }
+  const spread = Math.floor(c.speed / 5);
+  c.movement = randBetween(c.speed - spread, c.speed + spread);
+}
+
+// Mirrors healCost in internal/game/states/healer.go.
+// cost = hpToHeal * floor(avgLevel * 1.25), avgLevel min 1, cost min 1.
+export function healCost(c, hpToHeal) {
+  let avg = Math.floor((c.thiefLvl + c.mageLvl + c.fighterLvl) / 3);
+  if (avg < 2) avg = 1;
+  let cost = hpToHeal * Math.trunc(avg * 1.25);
+  if (cost < 1 && hpToHeal > 0) cost = 1;
+  return cost;
+}

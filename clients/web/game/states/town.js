@@ -6,6 +6,8 @@ import { JailState } from './jail.js';
 import { TowerState } from './tower.js';
 import { BlacksmithState } from './blacksmith.js';
 import { ViewCharacterState } from './view_character.js';
+import { HerbalistState } from './herbalist.js';
+import { CommonGuildState } from './common_guild.js';
 
 // Mapping of the town menu's letter keys to human-readable location names,
 // used by the stub message until each location is ported.
@@ -67,6 +69,8 @@ export class TownPromptState {
       J: () => new JailState(),
       S: () => new BlacksmithState(),
       '@': () => new TowerState(),
+      H: () => new HerbalistState(),
+      C: () => new CommonGuildState(),
     };
     if (SUB_STATES[choice]) {
       session.setNext(SUB_STATES[choice]());
