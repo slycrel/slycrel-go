@@ -1,7 +1,6 @@
 import { WhereType } from '../../model/enums.js';
 import { healCost } from '../../mechanics/leveling.js';
 import { saveCharacter } from '../../store/local.js';
-import { TownState } from './town.js';
 
 // Healer's Hut — port of internal/game/states/healer.go (HealerState and friends).
 // Lives in the wilderness, not the town, so the routing back from Q goes
@@ -28,12 +27,12 @@ export class HealerPromptState {
     switch (choice) {
       case 'H': session.setNext(new AgathaHealsState()); return;
       case 'N': session.setNext(new HealAmountState()); return;
-      case 'Q':
-        // Wilderness menu isn't ported yet — for now, drop back to town. Once
-        // wilderness lands this should re-route to that state.
-        c.location = WhereType.TheTown;
-        session.setNext(new TownState());
+      case 'Q': {
+        c.location = WhereType.TheWildernessMenu;
+        const { WildernessState } = await import('./wilderness.js');
+        session.setNext(new WildernessState());
         return;
+      }
       case '?': session.setNext(new HealerState()); return;
     }
     session.setNext(new HealerPromptState());
