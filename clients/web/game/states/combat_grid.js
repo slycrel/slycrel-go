@@ -202,6 +202,7 @@ export class GridCombatPromptState {
   async enter(session) {
     const { io, character: c, monster } = session;
     if (c.hitPoints <= 0 || !c.alive) {
+      io.clear();
       session.setNext(new UserKilledState());
       return;
     }
