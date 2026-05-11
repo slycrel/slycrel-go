@@ -386,10 +386,8 @@ export class UserEscapesState {
     io.println('You Succeed!', 6);
     io.cr();
     await io.pausePrompt();
-    c.location = WhereType.TheWildernessMenu;
     saveCharacter(c);
-    const { WildernessState } = await import('./wilderness.js');
-    session.setNext(new WildernessState());
+    await routeBackFromCombat(session);
   }
 }
 
@@ -402,8 +400,21 @@ export class MonsterRunsState {
     io.println('The monster ran away from you! What a coward.', 1);
     io.cr();
     await io.pausePrompt('-More-');
-    c.location = WhereType.TheWildernessMenu;
     saveCharacter(c);
+    await routeBackFromCombat(session);
+  }
+}
+
+// Drop back to whichever menu owned the combat. Mirrors the Location
+// check in user_escapes.go / monster_runs.go.
+async function routeBackFromCombat(session) {
+  const c = session.character;
+  if (c.location === WhereType.TheArenaCombat) {
+    c.location = WhereType.TheArenaMenu;
+    const { ArenaState } = await import('./arena.js');
+    session.setNext(new ArenaState());
+  } else {
+    c.location = WhereType.TheWildernessMenu;
     const { WildernessState } = await import('./wilderness.js');
     session.setNext(new WildernessState());
   }

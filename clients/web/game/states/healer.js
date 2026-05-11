@@ -2,9 +2,8 @@ import { WhereType } from '../../model/enums.js';
 import { healCost } from '../../mechanics/leveling.js';
 import { saveCharacter } from '../../store/local.js';
 
-// Healer's Hut — port of internal/game/states/healer.go (HealerState and friends).
-// Lives in the wilderness, not the town, so the routing back from Q goes
-// through the wilderness menu state (TODO once wilderness is ported).
+// Healer's Hut — port of internal/game/states/healer.go (HealerState and
+// friends). Reached via Wilderness A; Q returns to the wilderness menu.
 
 export class HealerState {
   async enter(session) {
