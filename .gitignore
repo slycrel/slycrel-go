@@ -23,3 +23,8 @@ orig/**/.svn/
 # Claude Code internals
 .claude/
 state/
+
+# Cloudflare Pages build artifact — the build copies /data into
+# clients/web/data so absolute /data/... fetches resolve from the
+# deploy root. Local dev doesn't need this; it serves from repo root.
+/clients/web/data/

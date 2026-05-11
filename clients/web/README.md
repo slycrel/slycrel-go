@@ -37,3 +37,27 @@ clients/web/
 `ansi_up` is loaded from jsdelivr's ESM CDN for now — see `ui/ansi.js`. If
 we ever want offline-safe deploys, vendor the file under `vendor/` and
 swap the import.
+
+## Cloudflare Pages deploy
+
+The client fetches `data/ansi/*`, `data/monsters/*`, `data/terrain/*`, etc.
+at absolute `/data/...` paths. For local dev that resolves naturally
+because we serve from the repo root. For Cloudflare Pages, the build
+needs to copy `data/` next to `index.html` so the same absolute paths
+resolve from the deploy root.
+
+**Dashboard setup** (one-time):
+1. Connect the repo to a new Pages project.
+2. Production branch: `webapp` (or whichever you merge into).
+3. Build command: `cp -r data clients/web/data`
+4. Build output directory: `clients/web`
+5. Deploy. Subsequent pushes auto-build.
+
+**CLI deploy** (no GitHub integration needed):
+```bash
+cp -r data clients/web/data
+npx wrangler pages deploy clients/web --project-name slycrel
+```
+
+Cloudflare Pages free tier covers any realistic traffic for this hobby
+game — no Workers Paid required since there's no server.
