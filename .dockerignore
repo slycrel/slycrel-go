@@ -22,8 +22,5 @@
 # Godot client has its own deploy pipeline.
 /clients
 
-# Cloudflare deploy artifacts (wrangler/Worker) — not part of the image.
-/deploy
-
 session-log.txt
 session-planning-detail.txt
