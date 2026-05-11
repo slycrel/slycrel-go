@@ -71,7 +71,10 @@ export class SetupCombatState {
     io.println(`You encounter a ${monster.name}!`, 6);
     io.cr();
     saveCharacter(c);
-    session.setNext(new SetupTextCombatState());
+    // Hand off to the grid combat setup — it'll fall back to text combat
+    // if no terrain map exists for the region.
+    const { GridCombatSetupState } = await import('./combat_grid.js');
+    session.setNext(new GridCombatSetupState());
   }
 }
 

@@ -45,6 +45,15 @@ export async function loadArmor() {
   return _armorCache;
 }
 
+const _terrainCache = {};
+export async function loadTerrain(mapName) {
+  if (_terrainCache[mapName]) return _terrainCache[mapName];
+  const res = await fetch(`/data/terrain/${mapName}.json`);
+  if (!res.ok) return null;
+  _terrainCache[mapName] = await res.json();
+  return _terrainCache[mapName];
+}
+
 const _monsterCache = {};
 export async function loadMonsters(region) {
   if (_monsterCache[region]) return _monsterCache[region];

@@ -15,6 +15,14 @@ export const Color = Object.freeze({
 
 export const COLOR_NAMES = ['Black', 'White', 'Blue', 'Red', 'Purple', 'Yellow', 'Orange', 'Green'];
 
+export const GRID_ROWS = 12;
+export const GRID_COLS = 48;
+
+export const TerrainCell = Object.freeze({
+  Empty: 0, PlainGr: 1, PlainBr: 2, Water: 3, Bridge: 4,
+  Boulder: 5, Forest: 6, DeepForest: 7, Swamp: 8, DeepSwamp: 9,
+});
+
 export const CombatType = Object.freeze({
   Attack: 0, Block: 1, Parry: 2, Dodge: 3, Special: 4,
 });

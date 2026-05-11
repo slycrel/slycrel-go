@@ -7,7 +7,7 @@ import {
 } from '../../store/local.js';
 import { TownState } from './town.js';
 import { ViewCharacterState } from './view_character.js';
-import { SetupTextCombatState } from './combat_text.js';
+import { GridCombatSetupState } from './combat_grid.js';
 
 export class ArenaState {
   async enter(session) {
@@ -86,13 +86,12 @@ export class ArenaChallengeState {
     const spread = Math.floor(spd / 5);
     c.movement = randBetween(spd - spread, spd + spread);
 
+    session.combatRegion = 'arena';
     io.clear();
     io.println(`You face ${opponent.name} in the Arena!`, 6);
     io.cr();
     saveCharacter(c);
-    // No grid combat in our port — go straight to text combat. The text
-    // combat win/lose states check character.location for arena routing.
-    session.setNext(new SetupTextCombatState());
+    session.setNext(new GridCombatSetupState());
   }
 }
 

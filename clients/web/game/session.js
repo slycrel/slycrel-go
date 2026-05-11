@@ -23,6 +23,15 @@ export class Session {
     this.monMove = 0;
     this.lastDisposition = 0;
     this.combatRegion = '';
+    this.combatName = '';
+    // Grid combat scratch.
+    this.terrain = null;
+    this.userR = 0;
+    this.userC = 0;
+    this.monsR = 0;
+    this.monsC = 0;
+    this.textOutln = 0;
+    this.gridStatusMsgs = ['', '', '', '', ''];
     this._next = null;
     this._returnStack = [];
     this._quit = false;
