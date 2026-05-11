@@ -54,6 +54,10 @@ local persistence.
 
 `clients/godot/` is a graphical client for the WebSocket server — a Godot 4.6 project that renders the ANSI menus with a DOS VGA font and draws grid-combat scenes with a custom tilemap. Open `clients/godot/project.godot` in Godot, set the server address in the connect screen, and play. See `clients/godot/QUICKSTART.md` for details.
 
+## Web Client
+
+`clients/web/` is a browser-only port of the game logic — no backend, designed for static hosting on Cloudflare Pages. Save state lives in `localStorage`. The Go server in `cmd/server/` remains the reference implementation; the web client mirrors its module layout (`model/`, `mechanics/`, `game/states/`) so logic can be cross-checked file-for-file. See `clients/web/README.md` to run it locally.
+
 ## Quick Start
 
 ```bash
