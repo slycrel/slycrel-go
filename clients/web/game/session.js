@@ -12,6 +12,17 @@ export class Session {
     this.io = new Io(rootEl);
     this.character = null;
     this.username = null;
+    // Combat scratch — mirrors the Go session fields used by combat_text.
+    this.monster = null;
+    this.monHitPoints = 0;
+    this.userAttackLoop = 0;
+    this.monAttackLoop = 0;
+    this.textCombatLoop = 0;
+    this.hit = 0;
+    this.userMove = 0;
+    this.monMove = 0;
+    this.lastDisposition = 0;
+    this.combatRegion = '';
     this._next = null;
     this._returnStack = [];
     this._quit = false;

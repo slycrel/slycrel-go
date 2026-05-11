@@ -45,6 +45,25 @@ export async function loadArmor() {
   return _armorCache;
 }
 
+const _monsterCache = {};
+export async function loadMonsters(region) {
+  if (_monsterCache[region]) return _monsterCache[region];
+  const res = await fetch(`/data/monsters/${region}.json`);
+  if (!res.ok) return [];
+  _monsterCache[region] = await res.json();
+  return _monsterCache[region];
+}
+
+// Mirrors JSONStore.GetRandomMonster: prefer monsters within ±2 of the
+// player's level, fall back to all monsters if none match.
+export async function getRandomMonster(region, playerLevel) {
+  const all = await loadMonsters(region);
+  if (!all.length) return null;
+  const candidates = all.filter(m => m.level <= playerLevel + 2 && m.level >= playerLevel - 2);
+  const pool = candidates.length ? candidates : all;
+  return { ...pool[Math.floor(Math.random() * pool.length)] };
+}
+
 // Inn state — shared across all players in Go, single-keyed here.
 const INN_KEY = 'slycrel.inn';
 

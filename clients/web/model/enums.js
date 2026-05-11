@@ -15,6 +15,23 @@ export const Color = Object.freeze({
 
 export const COLOR_NAMES = ['Black', 'White', 'Blue', 'Red', 'Purple', 'Yellow', 'Orange', 'Green'];
 
+export const CombatType = Object.freeze({
+  Attack: 0, Block: 1, Parry: 2, Dodge: 3, Special: 4,
+});
+
+export const HitType = Object.freeze({
+  None: 7,          // matches Go HitNone constant
+  TheUser: 0,
+  UserOnly: 1,
+  UserMiss: 2,
+  Opponent: 3,
+  OpponentOnly: 4,
+  Both: 5,
+  Neither: 6,
+  UserRan: 8,
+  OpponentRan: 9,
+});
+
 export const WhereType = Object.freeze({
   TheTown: 0,
   TheInn: 1,

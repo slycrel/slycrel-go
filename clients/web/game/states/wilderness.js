@@ -1,6 +1,7 @@
 import { WhereType } from '../../model/enums.js';
 import { TownState } from './town.js';
 import { HealerState } from './healer.js';
+import { SetupCombatState } from './combat_text.js';
 
 // WildernessState — port of internal/game/states/wilderness.go.
 // The combat options (F/M/S) stay as stubs until the combat-text /
@@ -32,9 +33,9 @@ export class WildernessPromptState {
       case 'F':
       case 'M':
       case 'S':
-        io.println(`(stub) ${{F:'Forest',M:'Mountain',S:'Swamp'}[choice]} combat not yet implemented.`, 6);
-        await io.pausePrompt();
-        session.setNext(new WildernessPromptState());
+        c.location = WhereType.TheWildernessCombat;
+        session.combatRegion = { F: 'forest', M: 'mountain', S: 'swamp' }[choice];
+        session.setNext(new SetupCombatState());
         return;
       case 'Q':
         c.location = WhereType.TheTown;
