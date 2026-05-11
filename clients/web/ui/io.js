@@ -1,7 +1,5 @@
 import { ansiToHtml } from './ansi.js';
 
-// Approximate the Go server's small palette (Outln color arg 0..7).
-// Tuned for dark-background readability; fine-tune later if needed.
 const PALETTE = {
   0: '#000000',
   1: '#cd0000',
@@ -27,26 +25,22 @@ export class Io {
   }
 
   println(text, color = 7) {
-    const span = document.createElement('div');
-    span.textContent = text;
-    span.style.color = PALETTE[color] ?? PALETTE[7];
-    this.root.appendChild(span);
+    const div = document.createElement('div');
+    div.textContent = text;
+    div.style.color = PALETTE[color] ?? PALETTE[7];
+    this.root.appendChild(div);
   }
 
   async showAnsiFile(name) {
     const res = await fetch(`/data/ansi/${name}.ans`);
     if (!res.ok) throw new Error(`ansi fetch ${name}: ${res.status}`);
-    // The .ans files store ESC as the literal two-character sequence \e —
-    // restore it to 0x1B before handing to the ANSI parser.
     const text = (await res.text()).replace(/\\e/g, '\x1b');
     const pre = document.createElement('pre');
     pre.innerHTML = ansiToHtml(text);
     this.root.appendChild(pre);
   }
 
-  // Wait for the user to press one of the allowed letters (case-insensitive).
-  // Mirrors slyio.LettersPrompt: prints the prompt, then resolves with the
-  // uppercase character that was pressed.
+  // Single-key prompt with a closed allowed set. Resolves uppercase.
   lettersPrompt(prompt, allowed) {
     const span = document.createElement('div');
     span.className = 'prompt cursor';
@@ -64,6 +58,67 @@ export class Io {
         span.classList.remove('cursor');
         span.textContent = prompt + ' ' + ch;
         resolve(ch);
+      };
+      document.addEventListener('keydown', onKey);
+    });
+  }
+
+  // Free-text input. Resolves on Enter; supports backspace; clamps to maxLen.
+  // Empty input returns ''.
+  textPrompt(promptText, maxLen = 40) {
+    const line = document.createElement('div');
+    line.className = 'prompt';
+    this.root.appendChild(line);
+
+    const promptSpan = document.createElement('span');
+    promptSpan.textContent = promptText + ' ';
+    line.appendChild(promptSpan);
+
+    const inputSpan = document.createElement('span');
+    line.appendChild(inputSpan);
+
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    line.appendChild(cursor);
+    line.scrollIntoView({ block: 'end' });
+
+    return new Promise((resolve) => {
+      let buffer = '';
+      const onKey = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          document.removeEventListener('keydown', onKey);
+          cursor.remove();
+          resolve(buffer);
+        } else if (e.key === 'Backspace') {
+          e.preventDefault();
+          buffer = buffer.slice(0, -1);
+          inputSpan.textContent = buffer;
+        } else if (e.key.length === 1 && buffer.length < maxLen) {
+          e.preventDefault();
+          buffer += e.key;
+          inputSpan.textContent = buffer;
+        }
+      };
+      document.addEventListener('keydown', onKey);
+    });
+  }
+
+  // Mirrors slyio.PausePrompt — any printable key (or Enter/Space) continues.
+  pausePrompt(promptText = '--press a key--') {
+    const span = document.createElement('div');
+    span.className = 'prompt cursor';
+    span.textContent = promptText + ' ';
+    this.root.appendChild(span);
+    span.scrollIntoView({ block: 'end' });
+
+    return new Promise((resolve) => {
+      const onKey = (e) => {
+        if (e.key.length !== 1 && e.key !== 'Enter') return;
+        e.preventDefault();
+        document.removeEventListener('keydown', onKey);
+        span.classList.remove('cursor');
+        resolve();
       };
       document.addEventListener('keydown', onKey);
     });

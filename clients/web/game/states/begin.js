@@ -1,3 +1,5 @@
+import { EnterSlycrelState } from './enter_slycrel.js';
+
 // BeginState — title screen + main entry menu.
 // Mirrors internal/game/states/begin.go (BeginState).
 export class BeginState {
@@ -15,13 +17,22 @@ export class BeginState {
     io.cr();
 
     const choice = await io.lettersPrompt('Your Selection >', 'EVCL');
+    io.cr();
 
-    // TODO: real transitions once enter_slycrel / character_create / quit
-    // states are ported. For now, log and loop back to the title.
-    io.cr();
-    io.println(`(stub) you chose ${choice} — transitions land in the next commit.`, 6);
-    io.cr();
-    await io.lettersPrompt('--press any key--', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ');
-    return new BeginState();
+    switch (choice) {
+      case 'E':
+      case 'C':
+        session.setNext(new EnterSlycrelState());
+        return;
+      case 'V':
+        io.println('Guild lists not yet implemented.', 1);
+        await io.pausePrompt();
+        session.setNext(new BeginState());
+        return;
+      case 'L':
+        io.println('Exiting Slycrel...', 3);
+        session.quit();
+        return;
+    }
   }
 }
