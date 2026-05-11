@@ -1,0 +1,33 @@
+# Keep the build context small and avoid leaking local state into the image.
+
+# Local build artifacts
+/slycrel
+/server
+/out
+
+# Local mutable state — the image must not bake in real characters.
+/state
+
+# Editor / OS cruft
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Git metadata (not needed at build time)
+.git/
+.gitignore
+
+# Reference material (original Pascal/C++) — huge and not used by the server
+/orig
+
+# Clients live in their own deploy pipeline
+/clients
+
+# Logs and planning scratch
+session-log.txt
+session-planning-detail.txt
+
+# Docker files themselves
+Dockerfile
+.dockerignore
