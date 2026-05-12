@@ -1,7 +1,7 @@
 import { WhereType, CharClass } from '../../model/enums.js';
 import { level } from '../../model/character.js';
 import { nextLevelUp, giveNewLevel } from '../../mechanics/leveling.js';
-import { saveCharacter } from '../../store/local.js';
+import { saveCharacter } from '../../store/remote.js';
 import { TownState } from './town.js';
 
 // The Go server reads this from TownConfig at runtime; we don't have a
@@ -61,7 +61,7 @@ export class TryNewLevelState {
       if (c.charClass === CharClass.Mage) {
         io.println(`  Psyche: ${c.maxPsyche}`, 1);
       }
-      saveCharacter(c);
+      await saveCharacter(c);
     } else {
       io.println('The GuildMaster looks at you and Laughs.', 6);
       const needed = required - c.totalExperience;

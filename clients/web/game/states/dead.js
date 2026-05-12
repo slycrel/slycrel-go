@@ -1,6 +1,6 @@
 import { newDayForUser } from '../../mechanics/resurrection.js';
 import { todayDate } from '../../mechanics/rand.js';
-import { saveCharacter } from '../../store/local.js';
+import { saveCharacter } from '../../store/remote.js';
 import { BeginState } from './begin.js';
 
 // DeadState — port of internal/game/states/dead.go.
@@ -15,7 +15,7 @@ export class DeadState {
     if (choice === 'N') {
       newDayForUser(session.character);
       session.character.lastOn = todayDate();
-      saveCharacter(session.character);
+      await saveCharacter(session.character);
       io.println('A new day dawns... you have been restored.', 3);
       io.cr();
       session.setNext(new BeginState());

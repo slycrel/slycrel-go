@@ -1,5 +1,5 @@
 import { WhereType } from '../../model/enums.js';
-import { saveCharacter } from '../../store/local.js';
+import { saveCharacter } from '../../store/remote.js';
 import { TownState } from './town.js';
 
 // BankState — port of internal/game/states/bank.go (BankState).
@@ -67,7 +67,7 @@ export class BankDepositState {
       c.coinsHand -= amount;
       io.println(`You give the banker ${amount} coins.`, 3);
       io.cr();
-      saveCharacter(c);
+      await saveCharacter(c);
     }
 
     session.setNext(new BankPromptState());
@@ -96,7 +96,7 @@ export class BankWithdrawState {
       c.coinsBank -= amount;
       io.println(`The Banker hands you ${amount} coins.`, 3);
       io.cr();
-      saveCharacter(c);
+      await saveCharacter(c);
     }
 
     session.setNext(new BankPromptState());

@@ -1,0 +1,11 @@
+name = "slycrel-legacy"
+compatibility_date = "2025-11-01"
+pages_build_output_dir = "."
+
+# The D1 database is created out-of-band with:
+#   wrangler d1 create slycrel-legacy
+# then paste the returned database_id below.
+[[d1_databases]]
+binding = "DB"
+database_name = "slycrel-legacy"
+database_id = "fdfd0412-738f-4a42-8eea-1ff0212b3132"

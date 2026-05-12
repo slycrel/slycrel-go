@@ -1,6 +1,6 @@
 import { WhereType } from '../../model/enums.js';
 import { healCost } from '../../mechanics/leveling.js';
-import { saveCharacter } from '../../store/local.js';
+import { saveCharacter } from '../../store/remote.js';
 import { TownState } from './town.js';
 
 // Herbalist — port of HerbalistState and friends from healer.go.
@@ -63,7 +63,7 @@ export class HerbalistHealState {
       io.println(`You have been HEALED!   <da da da da!> (Cost: ${cost} coins)`, 3);
       io.cr();
     }
-    saveCharacter(c);
+    await saveCharacter(c);
     session.setNext(new HerbalistPromptState());
   }
 }

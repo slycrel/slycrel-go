@@ -1,4 +1,4 @@
-import { findCharacterByBBSName, getActiveUser, setActiveUser, readNews, clearNews, saveCharacter } from '../../store/local.js';
+import { findCharacterByBBSName, getActiveUser, login, readNews, saveCharacter } from '../../store/remote.js';
 import { newDayForUser } from '../../mechanics/resurrection.js';
 import { resolveGladiatorFights } from '../../mechanics/arena.js';
 import { runDailyUpkeep } from '../../mechanics/upkeep.js';
@@ -8,25 +8,46 @@ import { TownState } from './town.js';
 import { BeginState } from './begin.js';
 
 // EnterSlycrelState — port of internal/game/states/begin.go EnterSlycrelState.
-// Loads the active user's character or routes to creation.
+// Checks the session cookie via /api/me first. If not logged in, prompts
+// for BBS name + password and calls /api/login (which auto-registers new
+// BBS names — the supplied password becomes the lock).
 export class EnterSlycrelState {
   async enter(session) {
     const { io } = session;
 
-    let user = getActiveUser();
+    let user = await getActiveUser();
     if (!user) {
-      user = (await io.textPrompt('Enter your BBS name:', 20)).trim();
-      if (!user) {
+      const name = (await io.textPrompt('Enter your BBS name:', 20)).trim();
+      if (!name) {
         session.setNext(new BeginState());
         return;
       }
-      setActiveUser(user);
+      const password = await io.passwordPrompt('Password:', 40);
+      if (!password) {
+        io.cr();
+        io.println('Password required.', 6);
+        session.setNext(new BeginState());
+        return;
+      }
+      try {
+        const result = await login(name, password);
+        user = result.bbsName;
+        if (result.registered) {
+          io.cr();
+          io.println('New BBS name claimed.', 3);
+        }
+      } catch (e) {
+        io.cr();
+        io.println(`Login failed: ${e.message}`, 6);
+        session.setNext(new BeginState());
+        return;
+      }
     }
     session.username = user;
     io.cr();
     io.println(`-=---  ${user} Entered the realm of Slycrel.`, 1);
 
-    const char = findCharacterByBBSName(user);
+    const char = await findCharacterByBBSName(user);
     const needsCreation = !char || !char.name || !char.maxHP;
     if (needsCreation) {
       io.cr();
@@ -51,12 +72,12 @@ export class EnterSlycrelState {
       newDayForUser(char);
       // Resolve any gladiator fights scheduled before today. This may
       // re-kill the character if they lost their match — re-check below.
-      resolveGladiatorFights(char);
+      await resolveGladiatorFights(char);
       // Shared-world upkeep (inn rent decrement, evictions). Idempotent
       // by inn.lastUpkeep so a second login on the same day is a no-op.
-      runDailyUpkeep(today);
+      await runDailyUpkeep(today);
       char.lastOn = today;
-      saveCharacter(char);
+      await saveCharacter(char);
       if (!char.alive) {
         io.cr();
         io.println('You died overnight in the gladiator pits...', 6);
@@ -72,13 +93,12 @@ export class EnterSlycrelState {
       return;
     }
 
-    // Show pending arena mail (e.g. "you've been slaughtered by X").
-    const news = readNews(user);
+    // readNews atomically fetches + clears the user's news rows.
+    const news = await readNews(user);
     if (news) {
       io.cr();
       io.println('=== Daily News ===', 4);
       for (const line of news.split('\n')) io.println(line, 1);
-      clearNews(user);
       await io.pausePrompt();
     }
 

@@ -1,23 +1,22 @@
-import { loadInn, saveInn, writeNews, findCharacterByName } from '../store/local.js';
+import { loadInn, saveInn, writeNews, findCharacterByName } from '../store/remote.js';
 
 // Daily upkeep — runs once per calendar day across all players.
-// inn.lastUpkeep is stamped after each pass so concurrent logins don't
-// double-decrement. (Browser-only is single-user; this still matters
-// if the player logs in twice on the same day.)
-export function runDailyUpkeep(today) {
-  innUpkeep(today);
+// inn.lastUpkeep is stamped after each pass so two players logging in on
+// the same day don't double-decrement the rooms.
+export async function runDailyUpkeep(today) {
+  await innUpkeep(today);
 }
 
-function innUpkeep(today) {
-  const inn = loadInn();
+async function innUpkeep(today) {
+  const inn = await loadInn();
   if ((inn.lastUpkeep ?? 0) >= today) return;
   for (const room of inn.rooms) {
     if (room.who && room.daysLeft > 0) {
       room.daysLeft -= 1;
       if (room.daysLeft <= 0) {
-        const occupant = findCharacterByName(room.who);
+        const occupant = await findCharacterByName(room.who);
         if (occupant) {
-          writeNews(occupant.bbsName,
+          await writeNews(occupant.bbsName,
             `Your room at the Inn has expired. The innkeeper kept your deposit.`);
         }
         room.who = '';
@@ -26,5 +25,5 @@ function innUpkeep(today) {
     }
   }
   inn.lastUpkeep = today;
-  saveInn(inn);
+  await saveInn(inn);
 }

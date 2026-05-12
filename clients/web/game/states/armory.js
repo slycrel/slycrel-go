@@ -1,5 +1,5 @@
 import { WhereType } from '../../model/enums.js';
-import { loadWeapons, loadArmor, saveCharacter } from '../../store/local.js';
+import { loadWeapons, loadArmor, saveCharacter } from '../../store/remote.js';
 import { TownState } from './town.js';
 
 const ARMOR_CLASS_NAMES = ['Body', 'Shield', 'Full Body'];
@@ -35,7 +35,7 @@ export class ArmoryPromptState {
         io.println('You switch your weapons.', 1);
         io.cr();
         [c.weapons[0], c.weapons[1]] = [c.weapons[1], c.weapons[0]];
-        saveCharacter(c);
+        await saveCharacter(c);
         session.setNext(new ArmoryPromptState());
         return;
       case 'Q':
@@ -101,7 +101,7 @@ export class BuyWeaponState {
     const slot = await io.numbersPrompt('Which weapon slot to replace? (1 or 2):', 1, 2);
     c.weapons[slot - 1] = { ...weapon };
     c.coinsHand -= weapon.cost;
-    saveCharacter(c);
+    await saveCharacter(c);
     io.cr();
     io.println(`Okay, you buy the spiffy ${weapon.name}.`, 3);
     await io.pausePrompt('--More--');
@@ -157,7 +157,7 @@ export class BuyArmorState {
     }
     c.armor[0] = { ...armor };
     c.coinsHand -= armor.cost;
-    saveCharacter(c);
+    await saveCharacter(c);
     io.cr();
     io.println(`Okay, you buy the spiffy ${armor.name}.`, 3);
     await io.pausePrompt('--More--');
@@ -197,7 +197,7 @@ export class SellWeaponState {
     }
     c.coinsHand += sellPrice;
     c.weapons[0] = { name: 'Hands', strike: 1, range: 0, actionStr: 'punch', cost: 0 };
-    saveCharacter(c);
+    await saveCharacter(c);
     io.cr();
     io.println('Okay, thanks. Come back anytime.', 1);
     io.cr();
@@ -230,7 +230,7 @@ export class SellArmorState {
     }
     c.coinsHand += sellPrice;
     c.armor[0] = { name: '', defense: 0, cost: 0 };
-    saveCharacter(c);
+    await saveCharacter(c);
     io.cr();
     io.println('Okay, thanks. Come back anytime.', 1);
     io.cr();

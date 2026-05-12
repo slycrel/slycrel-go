@@ -5,7 +5,7 @@ import {
   calcAdvanceMoves, applyUserAttackModifier, applyMonsterAttackModifier,
   getDisposition,
 } from '../../mechanics/combat.js';
-import { saveCharacter, getRandomMonster } from '../../store/local.js';
+import { saveCharacter, getRandomMonster } from '../../store/remote.js';
 import { level } from '../../model/character.js';
 import { DeadState } from './dead.js';
 
@@ -78,7 +78,7 @@ export class SetupCombatState {
     io.cr();
     io.println(`You encounter a ${monster.name}!`, 6);
     io.cr();
-    saveCharacter(c);
+    await saveCharacter(c);
     // Hand off to the grid combat setup — it'll fall back to text combat
     // if no terrain map exists for the region.
     const { GridCombatSetupState } = await import('./combat_grid.js');
@@ -340,7 +340,7 @@ export class UserKilledState {
     io.cr();
     c.coinsHand -= Math.floor(c.coinsHand / 3);
     c.alive = false;
-    saveCharacter(c);
+    await saveCharacter(c);
     session.setNext(new DeadState());
   }
 }
@@ -369,7 +369,7 @@ export class UserVictoriousState {
     io.println(`Hit Points: ${c.hitPoints}/${c.maxHP}`, 1);
     io.cr();
     c.location = WhereType.TheWildernessMenu;
-    saveCharacter(c);
+    await saveCharacter(c);
     await io.pausePrompt('-=Press A Key=-');
     const { WildernessState } = await import('./wilderness.js');
     session.setNext(new WildernessState());
@@ -386,7 +386,7 @@ export class UserEscapesState {
     io.println('You Succeed!', 6);
     io.cr();
     await io.pausePrompt();
-    saveCharacter(c);
+    await saveCharacter(c);
     await routeBackFromCombat(session);
   }
 }
@@ -400,7 +400,7 @@ export class MonsterRunsState {
     io.println('The monster ran away from you! What a coward.', 1);
     io.cr();
     await io.pausePrompt('-More-');
-    saveCharacter(c);
+    await saveCharacter(c);
     await routeBackFromCombat(session);
   }
 }

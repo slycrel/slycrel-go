@@ -1,6 +1,6 @@
 import { WhereType } from '../../model/enums.js';
 import { randBetween } from '../../mechanics/rand.js';
-import { saveCharacter, listCharacters } from '../../store/local.js';
+import { saveCharacter, listCharacters } from '../../store/remote.js';
 import { TownState } from './town.js';
 import { DeadState } from './dead.js';
 
@@ -127,7 +127,7 @@ export class OrderDrinkState {
       io.cr();
       io.println('                   <ZZZZZZZZZZZZZZZT!!!>', 4);
       c.alive = false;
-      saveCharacter(c);
+      await saveCharacter(c);
       session.setNext(new DeadState());
       return;
     }
@@ -146,7 +146,7 @@ export class OrderDrinkState {
         c.flirt1 -= 1;
         if (c.flirt1 < 1) c.flirt1 = 1;
       }
-      saveCharacter(c);
+      await saveCharacter(c);
     }
     io.cr();
     session.setNext(new TavernPromptState());
@@ -181,7 +181,7 @@ export class HangAroundState {
       io.println('As you wake up, your money purse feels lighter... You must have spent more than you thought...', 2);
       const divisor = randBetween(10, 25);
       if (divisor > 0) c.coinsHand -= Math.floor(c.coinsHand / divisor);
-      saveCharacter(c);
+      await saveCharacter(c);
     }
     session.setNext(new TavernPromptState());
   }
@@ -221,7 +221,7 @@ export class CorennePromptState {
     }
     // Flip sign — you can only flirt once per visit.
     c.flirt1 = -c.flirt1;
-    saveCharacter(c);
+    await saveCharacter(c);
     io.cr();
     session.setNext(new TavernPromptState());
   }
@@ -230,7 +230,7 @@ export class CorennePromptState {
 export class ViewGuildsState {
   async enter(session) {
     const { io } = session;
-    const chars = listCharacters();
+    const chars = await listCharacters();
     if (chars.length === 0) {
       io.println('No adventurers have registered yet.', 1);
       session.setNext(new TavernPromptState());

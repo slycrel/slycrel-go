@@ -4,7 +4,7 @@ import { user2Monster, arenaAppraisal, calcOdds } from '../../mechanics/arena.js
 import {
   saveCharacter, findCharacterByName, listCharacters,
   loadGladiatorFights, saveGladiatorFight, saveBet, writeNews,
-} from '../../store/local.js';
+} from '../../store/remote.js';
 import { TownState } from './town.js';
 import { ViewCharacterState } from './view_character.js';
 import { GridCombatSetupState } from './combat_grid.js';
@@ -58,7 +58,7 @@ export class ArenaChallengeState {
       session.setNext(new ArenaPromptState());
       return;
     }
-    const opponent = findCharacterByName(name);
+    const opponent = await findCharacterByName(name);
     if (!opponent) {
       io.println('Player Not Found', 6);
       session.setNext(new ArenaPromptState());
@@ -90,7 +90,7 @@ export class ArenaChallengeState {
     io.clear();
     io.println(`You face ${opponent.name} in the Arena!`, 6);
     io.cr();
-    saveCharacter(c);
+    await saveCharacter(c);
     session.setNext(new GridCombatSetupState());
   }
 }
@@ -109,7 +109,7 @@ export class ArenaGladiatorState {
       session.setNext(new ArenaPromptState());
       return;
     }
-    const opponent = findCharacterByName(name);
+    const opponent = await findCharacterByName(name);
     if (!opponent) {
       io.println('Player Not Found', 6);
       session.setNext(new ArenaPromptState());
@@ -135,9 +135,9 @@ export class ArenaGladiatorState {
     const challengerVal = arenaAppraisal(c);
     const opponentVal = arenaAppraisal(opponent);
     const odds = calcOdds(challengerVal, opponentVal);
-    saveGladiatorFight({ challenger: c.name, opponent: opponent.name, odds });
+    await saveGladiatorFight({ challenger: c.name, opponent: opponent.name, odds });
     c.spars -= 1;
-    saveCharacter(c);
+    await saveCharacter(c);
     io.println(`You have entered into the Gladiator competition against ${opponent.name} (${opponent.bbsName})!`, 1);
     io.println(`Odds (Challenger:Opponent) = ${odds[0]}:${odds[1]}`, 4);
     io.cr();
@@ -149,7 +149,7 @@ export class ArenaBetState {
   async enter(session) {
     const c = session.character;
     const { io } = session;
-    const fights = loadGladiatorFights();
+    const fights = await loadGladiatorFights();
     if (!fights.length) {
       io.println('Sorry, there are no matches to bet on at this time.', 3);
       io.cr();
@@ -193,11 +193,11 @@ export class ArenaBetState {
       return;
     }
     c.coinsHand -= amount;
-    saveBet({
+    await saveBet({
       fightNum, fileName: c.name, bet: amount,
       challenger: fight.challenger, opponent: fight.opponent, forChallenger,
     });
-    saveCharacter(c);
+    await saveCharacter(c);
     io.println('Okay, you now are in the pool!', 2);
     io.cr();
     await io.pausePrompt('-Any Key-');
@@ -208,7 +208,7 @@ export class ArenaBetState {
 export class ArenaListPlayersState {
   async enter(session) {
     const { io } = session;
-    const chars = listCharacters();
+    const chars = await listCharacters();
     if (!chars.length) {
       io.println('No players found.', 1);
       session.setNext(new ArenaPromptState());
@@ -248,7 +248,7 @@ export class ArenaChallengeWonState {
     io.cr();
 
     // Damage the loser — kill them and write them mail.
-    const loser = findCharacterByName(session.combatName);
+    const loser = await findCharacterByName(session.combatName);
     if (loser) {
       loser.alive = false;
       loser.coinsHand = Math.max(0, loser.coinsHand - coinReward);
@@ -256,10 +256,10 @@ export class ArenaChallengeWonState {
       loser.spendingExperience -= 20;
       if (loser.totalExperience < 0) loser.totalExperience = 0;
       if (loser.spendingExperience < 0) loser.spendingExperience = 0;
-      saveCharacter(loser);
-      writeNews(loser.bbsName, `You have been slaughtered by ${c.name}!`);
+      await saveCharacter(loser);
+      await writeNews(loser.bbsName, `You have been slaughtered by ${c.name}!`);
     }
-    saveCharacter(c);
+    await saveCharacter(c);
     await io.pausePrompt('-=Press A Key=-');
     c.location = WhereType.TheArenaMenu;
     session.setNext(new ArenaState());
@@ -272,7 +272,7 @@ export class ArenaChallengeLostState {
     const { io } = session;
     io.println("You're outta life buddy...", 6);
     io.cr();
-    const winner = findCharacterByName(session.combatName);
+    const winner = await findCharacterByName(session.combatName);
     if (winner) {
       const coinsTaken = randBetween(1, Math.floor(c.coinsHand / 2) + 1);
       const xpGained = Math.floor(c.totalExperience * 0.3);
@@ -281,13 +281,13 @@ export class ArenaChallengeLostState {
       winner.spendingExperience += xpGained;
       winner.fightsWon += 1;
       winner.totalFights += 1;
-      saveCharacter(winner);
-      writeNews(winner.bbsName, `You have slaughtered ${c.name}!`);
+      await saveCharacter(winner);
+      await writeNews(winner.bbsName, `You have slaughtered ${c.name}!`);
       c.coinsHand -= coinsTaken;
     }
     c.alive = false;
     c.totalFights += 1;
-    saveCharacter(c);
+    await saveCharacter(c);
     const { DeadState } = await import('./dead.js');
     session.setNext(new DeadState());
   }

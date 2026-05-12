@@ -1,6 +1,6 @@
 import { WhereType } from '../../model/enums.js';
 import { healCost } from '../../mechanics/leveling.js';
-import { saveCharacter } from '../../store/local.js';
+import { saveCharacter } from '../../store/remote.js';
 
 // Healer's Hut — port of internal/game/states/healer.go (HealerState and
 // friends). Reached via Wilderness A; Q returns to the wilderness menu.
@@ -65,7 +65,7 @@ export class AgathaHealsState {
       io.println(`You have been HEALED! (Cost: ${cost} coins)`, 3);
       io.cr();
     }
-    saveCharacter(c);
+    await saveCharacter(c);
     session.setNext(new HealerPromptState());
   }
 }
@@ -98,7 +98,7 @@ export class HealAmountState {
       io.cr();
       io.println(`You have been HEALED! (+${amount} HP, Cost: ${cost} coins)`, 3);
       io.cr();
-      saveCharacter(c);
+      await saveCharacter(c);
     }
     session.setNext(new HealerPromptState());
   }

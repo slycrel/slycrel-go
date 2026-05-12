@@ -118,6 +118,47 @@ export class Io {
     });
   }
 
+  // Same as textPrompt but masks the typed characters with '*'. Used for
+  // the login password prompt.
+  passwordPrompt(promptText, maxLen = 40) {
+    const line = document.createElement('div');
+    line.className = 'prompt';
+    this.root.appendChild(line);
+
+    const promptSpan = document.createElement('span');
+    promptSpan.textContent = promptText + ' ';
+    line.appendChild(promptSpan);
+
+    const inputSpan = document.createElement('span');
+    line.appendChild(inputSpan);
+
+    const cursor = document.createElement('span');
+    cursor.className = 'cursor';
+    line.appendChild(cursor);
+    line.scrollIntoView({ block: 'end' });
+
+    return new Promise((resolve) => {
+      let buffer = '';
+      const onKey = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          document.removeEventListener('keydown', onKey);
+          cursor.remove();
+          resolve(buffer);
+        } else if (e.key === 'Backspace') {
+          e.preventDefault();
+          buffer = buffer.slice(0, -1);
+          inputSpan.textContent = '*'.repeat(buffer.length);
+        } else if (e.key.length === 1 && buffer.length < maxLen) {
+          e.preventDefault();
+          buffer += e.key;
+          inputSpan.textContent = '*'.repeat(buffer.length);
+        }
+      };
+      document.addEventListener('keydown', onKey);
+    });
+  }
+
   // Integer in [min, max]. Empty input + Enter is treated as 0 (the "abort"
   // sentinel in the bank/inn flows). Out-of-range input prints a hint and
   // re-prompts on a new line.

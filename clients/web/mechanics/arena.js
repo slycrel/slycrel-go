@@ -2,7 +2,7 @@ import { randBetween } from './rand.js';
 import {
   loadGladiatorFights, loadBets, saveAllGladiatorFights, saveAllBets,
   writeNews,
-} from '../store/local.js';
+} from '../store/remote.js';
 
 // Convert a character into a Monster record for arena combat.
 // Mirrors mechanics/arena.go User2Monster.
@@ -51,10 +51,10 @@ export function arenaAppraisal(c) {
 // odds = [challenger, opponent] where the bigger number is the underdog;
 // challenger's win probability is odds[1] / (odds[0] + odds[1]).
 // Winnings on a successful bet: stake + stake * winnerOdds.
-export function resolveGladiatorFights(c) {
-  const fights = loadGladiatorFights();
+export async function resolveGladiatorFights(c) {
+  const fights = await loadGladiatorFights();
   if (!fights.length) return;
-  const bets = loadBets();
+  const bets = await loadBets();
   const lcName = (c.name ?? '').toLowerCase();
 
   // Player's bets keyed by 1-based fight number.
@@ -66,7 +66,7 @@ export function resolveGladiatorFights(c) {
   const remainingFights = [];
   const remainingBets = bets.filter(b => b.fileName?.toLowerCase() !== lcName);
 
-  fights.forEach((fight, idx) => {
+  for (const [idx, fight] of fights.entries()) {
     const fightNum = idx + 1;
     const isChallenger = fight.challenger?.toLowerCase() === lcName;
     const isOpponent = fight.opponent?.toLowerCase() === lcName;
@@ -75,7 +75,7 @@ export function resolveGladiatorFights(c) {
 
     if (!involved && !myBet) {
       remainingFights.push(fight);
-      return;
+      continue;
     }
 
     const [oc, oo] = fight.odds;
@@ -93,13 +93,13 @@ export function resolveGladiatorFights(c) {
         c.spendingExperience += xp;
         c.coinsHand += coins;
         c.fightsWon += 1;
-        writeNews(c.bbsName,
+        await writeNews(c.bbsName,
           `Gladiator: You defeated ${loserName} in the arena! +${xp} XP, +${coins} coins.`);
       } else {
         c.totalExperience = Math.max(0, c.totalExperience - 30);
         c.spendingExperience = Math.max(0, c.spendingExperience - 30);
         c.alive = false;
-        writeNews(c.bbsName, `Gladiator: You were slain by ${winnerName} in the arena.`);
+        await writeNews(c.bbsName, `Gladiator: You were slain by ${winnerName} in the arena.`);
       }
       c.totalFights += 1;
     }
@@ -111,17 +111,17 @@ export function resolveGladiatorFights(c) {
         const winnerOdds = challengerWins ? oc : oo;
         const payout = myBet.bet + myBet.bet * winnerOdds;
         c.coinsHand += payout;
-        writeNews(c.bbsName,
+        await writeNews(c.bbsName,
           `Bet won: ${fight.challenger} vs ${fight.opponent} — ${winnerName} took it. Payout: ${payout} coins.`);
       } else {
-        writeNews(c.bbsName,
+        await writeNews(c.bbsName,
           `Bet lost: ${fight.challenger} vs ${fight.opponent} — ${winnerName} won. You forfeit ${myBet.bet} coins.`);
       }
     }
-  });
+  }
 
-  saveAllGladiatorFights(remainingFights);
-  saveAllBets(remainingBets);
+  await saveAllGladiatorFights(remainingFights);
+  await saveAllBets(remainingBets);
 }
 
 export function calcOdds(challengerVal, opponentVal) {

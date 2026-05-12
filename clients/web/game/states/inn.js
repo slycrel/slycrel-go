@@ -1,6 +1,12 @@
 import { WhereType } from '../../model/enums.js';
-import { loadInn, saveInn, saveCharacter } from '../../store/local.js';
+import { loadInn, saveInn, saveCharacter } from '../../store/remote.js';
+import { newDayForUser } from '../../mechanics/resurrection.js';
 import { TownState } from './town.js';
+
+// Inn-sleep "advance the day" fee. Tunable — high enough to discourage
+// spamming it as a free XP/heal button, low enough that a player who's
+// just run out of moves at level 1 can still afford a refresh.
+const SLEEP_COST = 25;
 
 // Inn — port of internal/game/states/inn.go. The inn has shared mutable
 // state (rooms, owner, rate, safe) stored under one localStorage key.
@@ -17,9 +23,9 @@ export class InnState {
 export class InnPromptState {
   async enter(session) {
     const { io } = session;
-    io.println('[L]ook around, [R]ent a Room, [T]alk to Innkeeper, [V]iew, [Q]uit, [*]Owner Menu, [?]Help', 1);
+    io.println('[L]ook around, [R]ent a Room, [S]leep til Morning, [T]alk to Innkeeper, [V]iew, [Q]uit, [*]Owner Menu, [?]Help', 1);
     io.cr();
-    const choice = await io.lettersPrompt('Your choice?', 'LRTQV?*');
+    const choice = await io.lettersPrompt('Your choice?', 'LRSTQV?*');
     io.cr();
     switch (choice) {
       case 'L':
@@ -30,6 +36,7 @@ export class InnPromptState {
         session.setNext(new InnPromptState());
         return;
       case 'R': session.setNext(new RentRoomState()); return;
+      case 'S': session.setNext(new InnSleepState()); return;
       case 'T':
         io.println('You ask the innkeep how business has been. Quickly', 2);
         io.println('you realize you should have never asked such an open', 2);
@@ -59,7 +66,7 @@ export class RentRoomState {
   async enter(session) {
     const c = session.character;
     const { io } = session;
-    const inn = loadInn();
+    const inn = await loadInn();
 
     // Already have a room?
     if (inn.rooms.some(r => r.who === c.name && r.daysLeft > 0)) {
@@ -113,8 +120,38 @@ export class RentRoomState {
     c.coinsHand -= totalCost + lockCost;
     inn.rooms[emptySlot] = { who: c.name, daysLeft: days, lock: actualLock };
     inn.safe += totalCost;
-    saveInn(inn);
-    saveCharacter(c);
+    await saveInn(inn);
+    await saveCharacter(c);
+    io.cr();
+    session.setNext(new InnPromptState());
+  }
+}
+
+// Sleep — bypasses the once-per-real-day gate by refreshing the daily
+// limits directly. Doesn't advance lastOn (gladiator-fight resolution and
+// inn-rent upkeep stay tied to the calendar day so the shared world still
+// progresses on its own schedule).
+export class InnSleepState {
+  async enter(session) {
+    const c = session.character;
+    const { io } = session;
+    if (c.coinsHand < SLEEP_COST) {
+      io.println(`The innkeeper wants ${SLEEP_COST} coins for a night. You don't have enough.`, 6);
+      io.cr();
+      session.setNext(new InnPromptState());
+      return;
+    }
+    if (!await io.yesNoQuestion(`Sleep til morning for ${SLEEP_COST} coins?`)) {
+      io.cr();
+      session.setNext(new InnPromptState());
+      return;
+    }
+    c.coinsHand -= SLEEP_COST;
+    newDayForUser(c);
+    await saveCharacter(c);
+    io.cr();
+    io.println('You drift off in a creaky bed. Morning comes too soon.', 3);
+    io.println('You feel refreshed and ready for a new day.', 3);
     io.cr();
     session.setNext(new InnPromptState());
   }
@@ -135,7 +172,7 @@ export class InnOwnerMenuState {
   async enter(session) {
     const c = session.character;
     const { io } = session;
-    const inn = loadInn();
+    const inn = await loadInn();
 
     if (inn.owner && inn.owner !== c.name) {
       io.println('You are not the innkeeper!', 6);
@@ -144,7 +181,7 @@ export class InnOwnerMenuState {
     }
     if (!inn.owner) {
       inn.owner = c.name;
-      saveInn(inn);
+      await saveInn(inn);
       io.println('You are now the innkeeper!', 3);
       io.cr();
     }
@@ -164,7 +201,7 @@ export class InnOwnerMenuState {
       case 1: {
         const newRate = await io.numbersPrompt('Daily Charge for a Room:', 1, 32000);
         inn.curRate = newRate;
-        saveInn(inn);
+        await saveInn(inn);
         io.println(`Rate set to ${newRate} coins/day.`, 3);
         session.setNext(new InnOwnerMenuState());
         return;
@@ -177,7 +214,7 @@ export class InnOwnerMenuState {
         listRooms(io, inn);
         const roomNum = await io.numbersPrompt('Which room to vacate? [1-10]:', 1, 10);
         inn.rooms[roomNum - 1] = { who: '', daysLeft: 0, lock: 0 };
-        saveInn(inn);
+        await saveInn(inn);
         io.println('Player removed.', 3);
         session.setNext(new InnOwnerMenuState());
         return;
@@ -193,7 +230,7 @@ export class InnOwnerMenuState {
         return;
       case 5:
         inn.open = !inn.open;
-        saveInn(inn);
+        await saveInn(inn);
         io.println(`The Inn is now ${inn.open ? 'OPEN.' : 'CLOSED.'}`, inn.open ? 3 : 6);
         session.setNext(new InnOwnerMenuState());
         return;
@@ -201,7 +238,7 @@ export class InnOwnerMenuState {
         const newOwner = (await io.textPrompt('Who is to be the new Inn Owner?', 20)).trim();
         if (newOwner) {
           inn.owner = newOwner;
-          saveInn(inn);
+          await saveInn(inn);
           io.println(`Ownership transferred to ${newOwner}.`, 3);
         }
         session.setNext(new InnOwnerMenuState());

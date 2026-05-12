@@ -1,5 +1,5 @@
 import { EnterSlycrelState } from './enter_slycrel.js';
-import { listCharacters } from '../../store/local.js';
+import { listCharacters } from '../../store/remote.js';
 
 // BeginState — title screen + main entry menu.
 // Mirrors internal/game/states/begin.go (BeginState).
@@ -43,7 +43,7 @@ export class BeginState {
 // new module because it's the same ~15 lines and the duplication is
 // easier to read than the indirection would be.
 async function renderGuildLists(io) {
-  const chars = listCharacters();
+  const chars = await listCharacters();
   if (!chars.length) {
     io.println('No adventurers have registered yet.', 1);
     return;

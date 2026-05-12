@@ -1,6 +1,6 @@
 import { WhereType } from '../../model/enums.js';
 import { randBetween } from '../../mechanics/rand.js';
-import { saveCharacter } from '../../store/local.js';
+import { saveCharacter } from '../../store/remote.js';
 import { TownState } from './town.js';
 
 // BlacksmithState — port of internal/game/states/blacksmith.go. Three random
@@ -43,7 +43,7 @@ export class BlacksmithState {
         break;
     }
 
-    saveCharacter(c);
+    await saveCharacter(c);
     await io.pausePrompt('-=Press A Key=-');
     session.setNext(new TownState());
   }

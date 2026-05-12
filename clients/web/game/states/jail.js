@@ -1,6 +1,6 @@
 import { WhereType } from '../../model/enums.js';
 import { randBetween } from '../../mechanics/rand.js';
-import { saveCharacter } from '../../store/local.js';
+import { saveCharacter } from '../../store/remote.js';
 import { TownState } from './town.js';
 import { DeadState } from './dead.js';
 
@@ -33,7 +33,7 @@ export class JailState {
         io.cr();
         c.alive = false;
         c.location = WhereType.TheTown;
-        saveCharacter(c);
+        await saveCharacter(c);
         await io.pausePrompt('-=Press A Key=-');
         session.setNext(new DeadState());
         return;
@@ -49,7 +49,7 @@ export class JailState {
         io.println('weapon and head out the door.', 3);
         io.cr();
         c.weapons[0].strike += randBetween(1, 3);
-        saveCharacter(c);
+        await saveCharacter(c);
         await io.pausePrompt('-=Press A Key=-');
         session.setNext(new TownState());
         return;

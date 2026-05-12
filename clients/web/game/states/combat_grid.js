@@ -3,7 +3,7 @@ import { randBetween } from '../../mechanics/rand.js';
 import {
   TERRAIN_DISPLAY, numMovePointsAt, canMoveAnywhere, findRoute,
 } from '../../mechanics/terrain.js';
-import { loadTerrain, saveCharacter } from '../../store/local.js';
+import { loadTerrain, saveCharacter } from '../../store/remote.js';
 import {
   SetupTextCombatState, UserKilledState, UserVictoriousState,
 } from './combat_text.js';
@@ -310,7 +310,7 @@ export class GridMonsterMoveState {
     const spd = Math.max(c.speed, 5);
     const spread = Math.floor(spd / 5);
     c.movement = randBetween(spd - spread, spd + spread);
-    saveCharacter(c);
+    await saveCharacter(c);
     if (session.userR === session.monsR && session.userC === session.monsC) {
       session.setNext(new SetupTextCombatState());
       return;
